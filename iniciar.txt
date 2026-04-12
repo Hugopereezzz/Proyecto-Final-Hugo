@@ -1,0 +1,7 @@
+cd backend-java
+.\mvnw.cmd spring-boot:run
+
+
+
+En otra terminal:
+npm start
