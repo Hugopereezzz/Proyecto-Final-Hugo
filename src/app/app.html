@@ -2,398 +2,65 @@
 
   <!-- 1. AUTH PHASE -->
   @if (gamePhase() === 'auth') {
-  <div class="auth-screen">
-    <!-- Decorativos de fondo -->
-    <div class="auth-bg-animation"></div>
-    <div class="radar-sweep"></div>
-
-    <div class="auth-card">
-      <div class="auth-header">
-        <h1 class="game-title glitch" data-text="W.A.R. NET">W.A.R. NET</h1>
-        <h2 class="auth-subtitle">SISTEMA DE MANDO GLOBAL</h2>
-        <div class="header-divider"></div>
-      </div>
-
-      <div class="auth-form">
-        <div class="input-container">
-          <span class="input-icon">👤</span>
-          <input type="text" [value]="authUsername()" (input)="updateAuthUser($event)" required>
-          <label>Username</label>
-          <div class="input-highlight"></div>
-        </div>
-
-        <div class="input-container">
-          <span class="input-icon">🔑</span>
-          <input type="password" [value]="authPassword()" (input)="updateAuthPass($event)" required>
-          <label>Contraseña</label>
-          <div class="input-highlight"></div>
-        </div>
-
-        @if (authError()) {
-        <div class="auth-error pulse-danger">⚠️ {{ authError() }}</div>
-        }
-
-        <div class="auth-actions">
-          <button class="btn-cyber-primary" (click)="doLogin()" [disabled]="!authUsername() || !authPassword()">
-            <span>Iniciar Sesión</span>
-          </button>
-          <button class="btn-cyber-secondary" (click)="doRegister()" [disabled]="!authUsername() || !authPassword()">
-            <span>Registrarse</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <app-login (loginSuccess)="refreshLeaderboard(); gamePhase.set('setup')" />
   }
 
   <!-- 2. SETUP / LOBBY PHASE -->
   @if (gamePhase() === 'setup') {
-  <div class="setup-screen">
-    <div class="lobby-layout">
-
-      <!-- Sidebar Navigation -->
-      <div class="lobby-nav" style="display: flex; flex-direction: column; height: 100%">
-        <button class="game-nav-btn" [class.active]="!showShop()" (click)="showShop.set(false)">🚀 MANDO</button>
-        <button class="game-nav-btn" [class.active]="showShop()" (click)="showShop.set(true)">🛠️ ARMERÍA</button>
-        <div style="flex: 1"></div>
-        <button class="game-nav-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); margin-top: auto"
-          (click)="logout()">🚪 CERRAR SESIÓN</button>
-      </div>
-
-      <!-- Main Content Area -->
-      <div class="setup-card lobby-main">
-
-        @if (!showShop()) {
-        <!-- Command Center (Existing Lobby) -->
-        <h1 class="game-title">🚀 CENTRO DE MANDO</h1>
-        <p class="game-subtitle">Bienvenido de nuevo, Agente {{ authService.currentUser() }}</p>
-
-        @if (!inRoom()) {
-        <div class="lobby-controls">
-          <div class="action-buttons">
-            <button class="btn-primary" (click)="createRoom()">CREAR CANAL SEGURO</button>
-          </div>
-          <div class="divider">O</div>
-          <div class="input-group">
-            <label>CÓDIGO DE CANAL (6 DÍGITOS)</label>
-            <div style="display: flex; gap: 10px;">
-              <input type="text" [value]="joinRoomId()" (input)="updateJoinRoomId($event)"
-                placeholder="Introducir Código..." maxlength="6" style="flex: 1">
-              <button class="btn-secondary" (click)="joinRoom()" [disabled]="joinRoomId().length < 4">UNIRSE</button>
-            </div>
-          </div>
-        </div>
-        } @else {
-        <div class="room-waiting">
-          <h2 style="display: flex; align-items: center; gap: 15px;">
-            <button class="btn-secondary" style="padding: 8px 12px; font-size: 1.2rem; line-height: 1;" (click)="leaveGame()" title="Volver al Menú">⬅️</button>
-            CANAL: <span class="room-code">{{ currentRoomId() }}</span>
-            <button class="btn-copy" (click)="copyRoomCode()" [title]="copyStatus()">
-              @if (copyStatus() === 'Copiado!') { ✅ } @else { 📋 }
-            </button>
-          </h2>
-
-          <div class="players-list">
-            @for (player of roomPlayers(); track player.id) {
-            <div class="player-item">
-              <span class="color-dot"
-                [style.background]="player.continentIndex >= 0 ? gameService.countryLocations[player.continentIndex].color : '#555'"></span>
-              <span class="player-name">{{ player.name }}</span>
-              @if (player.continentIndex >= 0) {
-              <span class="badge" style="background: rgba(255,255,255,0.1)">{{
-                gameService.countryLocations[player.continentIndex].name }}</span>
-              }
-              @if (player.name === authService.currentUser()) {
-              <span class="badge" style="border-color: #00e5ff; color: #00e5ff">TÚ</span>
-              }
-            </div>
-            }
-          </div>
-
-          <!-- Continent Selection -->
-          <div class="continent-selector">
-            <h3>SELECCIONA TU SECTOR:</h3>
-            <div class="continent-grid">
-              @for (loc of gameService.countryLocations; track loc.name; let i = $index) {
-              <div class="continent-card" [class.selected]="myContinentIndex() === i"
-                [class.taken]="isContinentTaken(i) && myContinentIndex() !== i" (click)="selectContinent(i)">
-                <div class="continent-drawing">
-                  <svg viewBox="0 0 100 100" class="tactical-map">
-                    @if (loc.name === 'Norteamérica') {
-                    <path d="M20,10 L40,8 L55,15 L60,30 L55,40 L45,45 L40,60 L30,45 L15,40 L10,25 Z" fill="currentColor"
-                      opacity="0.4" stroke="currentColor" stroke-width="1.5" />
-                    }
-                    @if (loc.name === 'Eurasia') {
-                    <path d="M10,20 L30,15 L50,10 L70,8 L90,15 L95,35 L80,45 L60,50 L40,45 L20,40 Z" fill="currentColor"
-                      opacity="0.4" stroke="currentColor" stroke-width="1.5" />
-                    }
-                    @if (loc.name === 'Sudamérica') {
-                    <path d="M30,10 L50,15 L55,30 L45,60 L35,85 L25,60 L20,30 Z" fill="currentColor" opacity="0.4"
-                      stroke="currentColor" stroke-width="1.5" />
-                    }
-                    @if (loc.name === 'África') {
-                    <path d="M25,15 L50,10 L75,20 L80,45 L65,70 L50,85 L35,65 L20,45 L20,25 Z" fill="currentColor"
-                      opacity="0.4" stroke="currentColor" stroke-width="1.5" />
-                    }
-                  </svg>
-                </div>
-                <div class="continent-name">{{ loc.name }}</div>
-              </div>
-              }
-            </div>
-          </div>
-
-          <div style="margin-top: 30px;">
-            @if (roomPlayers().length >= 2) {
-            @if (myCityId() === 0) {
-            <button class="btn-primary pulse" (click)="startGame()" [disabled]="!allPlayersReady()">INICIAR GUERRA
-              MUNDIAL</button>
-            } @else {
-            <div class="waiting-spinner">Esperando Autorización del Host...</div>
-            }
-            } @else {
-            <div class="waiting-spinner">Reclutando más Operadores... ({{ roomPlayers().length }}/4)</div>
-            }
-          </div>
-        </div>
-        }
-        } @else {
-        <!-- Armory / Shop -->
-        <div class="shop-container">
-          <h1 class="game-title">🛠️ ARMERÍA ESTRATÉGICA</h1>
-          <div class="credits-display">SALDO: <span class="cc-value">{{ authService.currentUserStats()?.credits }}
-              CC</span></div>
-
-          <div class="upgrade-grid">
-            <!-- Health Upgrade -->
-            <div class="upgrade-item">
-              <div class="upgrade-info">
-                <span class="upgrade-name">BLINDAJE DE TITANIO (VIDA)</span>
-                <span class="upgrade-desc">Aumenta la vida máxima de la ciudad un 10% por nivel.</span>
-              </div>
-              <div class="upgrade-progress">
-                @for (dot of [1,2,3,4,5]; track dot) {
-                <div class="progress-dot" [class.filled]="(authService.currentUserStats()?.healthLevel || 0) >= dot">
-                </div>
-                }
-              </div>
-              <button class="btn-shop" [disabled]="(authService.currentUserStats()?.healthLevel || 0) >= 5"
-                (click)="buyUpgrade('health')">
-                MEJORAR ({{ ((authService.currentUserStats()?.healthLevel || 0) + 1) * 200 }} CC)
-              </button>
-            </div>
-
-            <!-- Ammo Upgrade -->
-            <div class="upgrade-item">
-              <div class="upgrade-info">
-                <span class="upgrade-name">SILOS AMPLIADOS (MUNICIÓN)</span>
-                <span class="upgrade-desc">Empieza con +5 misiles extra por nivel.</span>
-              </div>
-              <div class="upgrade-progress">
-                @for (dot of [1,2,3,4,5]; track dot) {
-                <div class="progress-dot" [class.filled]="(authService.currentUserStats()?.ammoLevel || 0) >= dot">
-                </div>
-                }
-              </div>
-              <button class="btn-shop" [disabled]="(authService.currentUserStats()?.ammoLevel || 0) >= 5"
-                (click)="buyUpgrade('ammo')">
-                MEJORAR ({{ ((authService.currentUserStats()?.ammoLevel || 0) + 1) * 200 }} CC)
-              </button>
-            </div>
-
-            <!-- Speed Upgrade -->
-            <div class="upgrade-item">
-              <div class="upgrade-info">
-                <span class="upgrade-name">PROPULSIÓN DE PLASMA (VELOCIDAD)</span>
-                <span class="upgrade-desc">Los misiles viajan un 10% más rápido por nivel.</span>
-              </div>
-              <div class="upgrade-progress">
-                @for (dot of [1,2,3,4,5]; track dot) {
-                <div class="progress-dot" [class.filled]="(authService.currentUserStats()?.speedLevel || 0) >= dot">
-                </div>
-                }
-              </div>
-              <button class="btn-shop" [disabled]="(authService.currentUserStats()?.speedLevel || 0) >= 5"
-                (click)="buyUpgrade('speed')">
-                MEJORAR ({{ ((authService.currentUserStats()?.speedLevel || 0) + 1) * 200 }} CC)
-              </button>
-            </div>
-
-            <!-- Consumable: Allied Support -->
-            <div class="upgrade-item consumable">
-              <div class="upgrade-info">
-                <span class="upgrade-name">APOYO AÉREO ALIADO</span>
-                <span class="upgrade-desc">Solicita un potente misil de la OTAN durante tu turno.</span>
-              </div>
-              <div class="upgrade-count">PROPIEDAD: {{ authService.currentUserStats()?.alliedSupportCount }}</div>
-              <button class="btn-shop buy-btn" (click)="buyAlliedSupport()">COMPRAR 1 (150 CC)</button>
-            </div>
-          </div>
-        </div>
-        }
-      </div>
-
-      <!-- Leaderboard Sidebar -->
-      <div class="leaderboard-panel">
-        <h3>🏆 ÉLITE GLOBAL</h3>
-        <div class="ranking-table">
-          @for (top of leaderboardRows(); track top.username; let i = $index) {
-          <div class="rank-row">
-            <span>{{ i + 1 }}. {{ top.username }}</span>
-            <span>{{ top.wins }} VICTORIAS</span>
-          </div>
-          }
-        </div>
-      </div>
-    </div>
-  </div>
+    <app-lobby 
+      [leaderboardRows]="leaderboardRows()"
+      [roomPlayers]="roomPlayers()"
+      [inRoom]="inRoom()"
+      [currentRoomId]="currentRoomId()"
+      [myCityId]="myCityId()"
+      (roomCreated)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
+      (roomJoined)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
+      (gameStarted)="gamePhase.set('aiming')"
+      (leftRoom)="leaveGame()"
+      (loggedOut)="logout()"
+    />
   }
 
   <!-- 3. GAME CANVAS -->
   <canvas #gameCanvas class="game-canvas" (click)="onCanvasClick($event)" (mousemove)="onCanvasMouseMove($event)"
     [class.hidden]="gamePhase() === 'setup' || gamePhase() === 'auth'" id="game-canvas"></canvas>
 
-  <!-- Botón abandonar FIJO, siempre accesible, fuera del canvas -->
+  <!-- 4. HUD OVERLAY -->
   @if (gamePhase() !== 'setup' && gamePhase() !== 'auth') {
-  <button class="abandon-btn-fixed btn-secondary"
-    style="color: #ef4444 !important; border-color: rgba(239,68,68,0.4); padding: 6px 14px; font-size: 0.72rem; letter-spacing: 1.5px;"
-    (click)="leaveGame()">🚪 ABANDONAR</button>
+    <app-game-hud 
+      [cities]="cities()"
+      [gamePhase]="gamePhase()"
+      [turnNumber]="turnNumber()"
+      [turnTimer]="turnTimer()"
+      [currentPlayerName]="currentPlayerName()"
+      [currentPlayerColor]="currentPlayerColor()"
+      [isMyTurn]="isMyTurn()"
+      [canDefend]="canDefend()"
+      [lootEarned]="state.lootEarned"
+      (skipDefense)="skipDefense()"
+      (callAllies)="callAlliedSupport()"
+      (leaveGame)="leaveGame()"
+    />
   }
 
-  <!-- 4. HUD OVERLAY (absolute, encima del canvas) -->
-  @if (gamePhase() !== 'setup' && gamePhase() !== 'auth') {
-  <div class="hud-overlay">
-
-    <!-- Barra superior -->
-    <div class="top-bar">
-      <div class="turn-info">
-        <span class="turn-label">TURNO {{ turnNumber() }}</span>
-        <span class="phase-label" [style.color]="currentPlayerColor()">
-          Turno de {{ currentPlayerName() }}
-        </span>
-        @if (gamePhase() === 'aiming') {
-          <div class="turn-timer" [class.warning]="turnTimer() <= 10">
-            ⏳ {{ Math.ceil(turnTimer()) }}s
-          </div>
-        }
-      </div>
-
-      <!-- Live Loot Counter -->
-      <div class="live-loot">
-        <span class="loot-icon">💰</span>
-        <span class="loot-value">{{ state.lootEarned }} CC Obtenidos</span>
-      </div>
-
-      <!-- Allied Support Button In-Game -->
-      @if (isMyTurn() && gamePhase() === 'aiming' && (authService.currentUserStats()?.alliedSupportCount || 0) > 0) {
-      <button class="btn-ally pulse" (click)="callAlliedSupport()">
-        📞 LLAMAR ALIADOS ({{ authService.currentUserStats()?.alliedSupportCount }})
-      </button>
-      }
-
-      <div class="phase-indicator">
-        @if (isMyTurn()) {
-        @if (gamePhase() === 'aiming') {
-        <span class="phase-text pulse">🎯 TU TURNO: SELECCIONA OBJETIVO</span>
-        }
-        @if (gamePhase() === 'defending' || gamePhase() === 'firing') {
-        <span class="phase-text">🚀 MISIL EN VUELO</span>
-        }
-        } @else {
-        @if (gamePhase() === 'defending' && canDefend()) {
-        <span class="phase-text pulse">🛡️ ¡DEFIENDE! Haz clic en los misiles enemigos</span>
-        } @else {
-        <span class="phase-text">⏳ Esperando a {{ currentPlayerName() }}...</span>
-        }
-        }
-      </div>
-    </div>
-
-    <!-- City Health Bars (abajo) -->
-    <div class="health-bars">
-      @for (city of cities(); track city.id) {
-      <div class="city-health" [class.dead]="!city.isAlive">
-        <span class="city-name" [style.color]="city.color">
-          {{ city.name }}
-          @if (city.isBot) {
-            <span style="color: #ef4444; font-size: 0.7em;">[BOT]</span>
-          }
-        </span>
-        <div class="health-bar-bg">
-          <div class="health-bar-fill" [style.width.%]="city.health" [style.background]="city.color"
-            [class.low-health]="city.health <= 30"></div>
-        </div>
-        <div class="stats-row">
-          <span class="health-text">{{ city.health }}%</span>
-          <span class="ammo-text">🧨 Misil: {{ city.ammo }}</span>
-        </div>
-
-        <!-- Active Skills Display -->
-        <div class="active-skills">
-          @for (skill of city.activeSkills; track skill) {
-          <span class="skill-badge" [class]="skill">{{ skill.toUpperCase() }}</span>
-          }
-        </div>
-      </div>
-      }
-    </div>
-  </div>
-  }
-
-  <!-- Roulette Modal -->
+  <!-- 5. ROULETTE MODAL -->
   @if (rouletteVisible()) {
-  <div class="roulette-overlay">
-    <div class="roulette-modal">
-      <div class="roulette-header">🎲 ADQUISICIÓN TÁCTICA</div>
-      <div class="roulette-player">Objetivo: <span [style.color]="'#00e5ff'">{{ roulettePlayer() }}</span></div>
-      <div class="roulette-spinner">
-        <div class="spinner-window">
-          <div class="spinner-text pulse">{{ rouletteDisplaySkill() }}</div>
-        </div>
-      </div>
-      @if (rouletteSkillDescription()) {
-        <div class="roulette-description pulse" style="margin-top: 15px; font-size: 1rem; color: #00e5ff; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-          {{ rouletteSkillDescription() }}
-        </div>
-      }
-      <div class="roulette-glow"></div>
-    </div>
-  </div>
+    <app-roulette 
+      [player]="roulettePlayer()"
+      [displaySkill]="rouletteDisplaySkill()"
+      [skillDescription]="rouletteSkillDescription()"
+    />
   }
 
-  <!-- Game Over Modal -->
+  <!-- 6. GAME OVER MODAL -->
   @if (gamePhase() === 'gameover') {
-  <div class="gameover-overlay">
-    <div class="gameover-card reward-card">
-      <div class="terminal-header">COMBATE FINALIZADO</div>
-
-      @if (winner()) {
-      <h2 class="winner-text" [style.color]="winner()!.color">
-        🏆 {{ winner()!.name }} HA DOMINADO 🏆
-      </h2>
-      } @else {
-      <h2 class="winner-text">💀 ANIQUILACIÓN MUTUA 💀</h2>
-      }
-
-      <div class="reward-summary">
-        <h3>GANANCIAS DE COMBATE:</h3>
-        <div class="reward-row">
-          <span>BONO DE VICTORIA</span>
-          <span class="reward-value">{{ winBonus() }} CC</span>
-        </div>
-        <div class="reward-row">
-          <span>BOTÍN DE DESTRUCCIÓN</span>
-          <span class="reward-value">{{ state.lootEarned }} CC</span>
-        </div>
-        <div class="reward-divider"></div>
-        <div class="reward-total">
-          <span>TOTAL</span>
-          <span class="reward-value gold">{{ totalEarnings() }} CC</span>
-        </div>
-      </div>
-
-      <button class="btn-primary" (click)="resetGame()">VOLVER AL INICIO</button>
-    </div>
-  </div>
+    <app-game-over 
+      [winner]="winner()"
+      [winBonus]="winBonus()"
+      [lootEarned]="state.lootEarned"
+      [totalEarnings]="totalEarnings()"
+      (playAgain)="resetGame()"
+    />
   }
+
 </div>

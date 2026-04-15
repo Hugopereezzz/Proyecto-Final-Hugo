@@ -1,0 +1,83 @@
+<div class="login-screen">
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="bg-radar"></div>
+  <canvas class="bg-particles" id="login-particles"></canvas>
+
+  <div class="login-card">
+    <!-- Corner decorators -->
+    <span class="corner top-left"></span>
+    <span class="corner top-right"></span>
+    <span class="corner bot-left"></span>
+    <span class="corner bot-right"></span>
+
+    <div class="login-header">
+      <div class="logo-badge">W.A.R</div>
+      <h1 class="war-title glitch" data-text="W.A.R. NET">W.A.R. NET</h1>
+      <p class="war-sub">SISTEMA DE MANDO GLOBAL · AUTENTICACIÓN REQUERIDA</p>
+      <div class="header-line"></div>
+    </div>
+
+    <div class="login-form">
+      <div class="field-wrap">
+        <span class="field-icon">⬡</span>
+        <input
+          id="login-username"
+          type="text"
+          autocomplete="off"
+          [value]="authUsername()"
+          (input)="updateAuthUser($event)"
+          placeholder=" "
+        />
+        <label for="login-username">Usuario</label>
+        <div class="field-line"></div>
+      </div>
+
+      <div class="field-wrap">
+        <span class="field-icon">⬡</span>
+        <input
+          id="login-password"
+          type="password"
+          autocomplete="current-password"
+          [value]="authPassword()"
+          (input)="updateAuthPass($event)"
+          placeholder=" "
+        />
+        <label for="login-password">Contraseña</label>
+        <div class="field-line"></div>
+      </div>
+
+      @if (authError()) {
+        <div class="login-error">
+          <span class="err-icon">▲</span> {{ authError() }}
+        </div>
+      }
+
+      <div class="login-actions">
+        <button
+          id="btn-login"
+          class="btn-login"
+          (click)="doLogin()"
+          [disabled]="!authUsername() || !authPassword() || isLoading()"
+        >
+          @if (isLoading()) {
+            <span class="spinner"></span> AUTENTICANDO...
+          } @else {
+            <span class="btn-scan"></span> INICIAR SESIÓN
+          }
+        </button>
+
+        <button
+          id="btn-register"
+          class="btn-register"
+          (click)="doRegister()"
+          [disabled]="!authUsername() || !authPassword() || isLoading()"
+        >
+          REGISTRARSE
+        </button>
+      </div>
+    </div>
+
+    <p class="login-footer">W.A.R. NET v2.0 · ACCESO CIFRADO · AUTORIZADO</p>
+  </div>
+</div>

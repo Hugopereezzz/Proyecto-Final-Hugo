@@ -1,0 +1,171 @@
+<div class="lobby-screen">
+  <div class="lobby-layout">
+
+    <!-- Sidebar nav -->
+    <nav class="lobby-nav">
+      <div class="nav-logo">W.A.R</div>
+      <button class="nav-btn" [class.active]="activeTab() === 'lobby'" (click)="activeTab.set('lobby')">
+        <span class="nav-icon">🚀</span>
+        <span>Mando</span>
+      </button>
+      <button class="nav-btn" [class.active]="activeTab() === 'arsenal'" (click)="activeTab.set('arsenal')">
+        <span class="nav-icon">🛠️</span>
+        <span>Armería</span>
+      </button>
+      <div class="nav-spacer"></div>
+      <div class="nav-user">
+        <span class="nav-avatar">{{ (authService.currentUser() || 'A')[0].toUpperCase() }}</span>
+        <span class="nav-username">{{ authService.currentUser() }}</span>
+      </div>
+      <button class="nav-btn danger" (click)="logout()">
+        <span class="nav-icon">🚪</span>
+        <span>Salir</span>
+      </button>
+    </nav>
+
+    <!-- Main content -->
+    <main class="lobby-main">
+
+      @if (activeTab() === 'lobby') {
+        <!-- Command Center -->
+        @if (!inRoom()) {
+          <div class="section-header">
+            <h1 class="section-title">CENTRO DE MANDO</h1>
+            <p class="section-sub">Bienvenido, Agente <strong>{{ authService.currentUser() }}</strong></p>
+          </div>
+
+          <div class="room-actions">
+            <button class="btn-create" id="btn-create-room" (click)="createRoom()">
+              <span class="btn-icon">⚡</span>
+              <div>
+                <div class="btn-label">CREAR SALA</div>
+                <div class="btn-hint">Inicia una nueva partida</div>
+              </div>
+            </button>
+
+            <div class="join-divider"><span>O</span></div>
+
+            <div class="join-form">
+              <label class="join-label">CÓDIGO DE SALA (6 DÍGITOS)</label>
+              <div class="join-row">
+                <input
+                  id="input-join-code"
+                  class="join-input"
+                  type="text"
+                  placeholder="XXXXXX"
+                  maxlength="6"
+                  [value]="joinRoomId()"
+                  (input)="updateJoinRoomId($event)"
+                />
+                <button class="btn-join" [disabled]="joinRoomId().length < 4" (click)="joinRoom()">
+                  UNIRSE
+                </button>
+              </div>
+            </div>
+          </div>
+
+        } @else {
+          <!-- In room -->
+          <div class="room-header">
+            <button class="btn-back" (click)="leaveRoom()">← Salir</button>
+            <div class="room-code-display">
+              <span class="room-code-label">CÓDIGO DE SALA</span>
+              <span class="room-code">{{ currentRoomId() }}</span>
+              <button class="btn-copy" (click)="copyRoomCode()">
+                {{ copyStatus() === '¡Copiado!' ? '✓' : '📋' }}
+                {{ copyStatus() }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Players -->
+          <div class="players-section">
+            <h3 class="sub-label">OPERADORES ({{ roomPlayers().length }}/4)</h3>
+            <div class="players-grid">
+              @for (player of roomPlayers(); track player.id) {
+                <div class="player-card" [class.me]="player.name === authService.currentUser()">
+                  <div class="player-avatar"
+                    [style.background]="player.continentIndex >= 0 ? gameService.countryLocations[player.continentIndex].color : '#374151'">
+                    {{ player.name[0].toUpperCase() }}
+                  </div>
+                  <div class="player-info">
+                    <span class="player-name">{{ player.name }}</span>
+                    <span class="player-region">
+                      @if (player.continentIndex >= 0) {
+                        {{ gameService.countryLocations[player.continentIndex].name }}
+                      } @else {
+                        Seleccionando...
+                      }
+                    </span>
+                  </div>
+                  @if (player.name === authService.currentUser()) {
+                    <span class="badge-you">TÚ</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Continent selection -->
+          <div class="continent-section">
+            <h3 class="sub-label">SELECCIONA TU SECTOR</h3>
+            <div class="continent-grid">
+              @for (loc of gameService.countryLocations; track loc.name; let i = $index) {
+                <div
+                  class="continent-card"
+                  [class.selected]="myContinentIndex() === i"
+                  [class.taken]="isContinentTaken(i) && myContinentIndex() !== i"
+                  (click)="selectContinent(i)"
+                  [style.--loc-color]="loc.color"
+                >
+                  <svg class="continent-map" viewBox="0 0 100 100">
+                    @if (loc.name === 'Norteamérica') {
+                      <path d="M20,10 L40,8 L55,15 L60,30 L55,40 L45,45 L40,60 L30,45 L15,40 L10,25 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
+                    }
+                    @if (loc.name === 'Eurasia') {
+                      <path d="M10,20 L30,15 L50,10 L70,8 L90,15 L95,35 L80,45 L60,50 L40,45 L20,40 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
+                    }
+                    @if (loc.name === 'Sudamérica') {
+                      <path d="M30,10 L50,15 L55,30 L45,60 L35,85 L25,60 L20,30 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
+                    }
+                    @if (loc.name === 'África') {
+                      <path d="M25,15 L50,10 L75,20 L80,45 L65,70 L50,85 L35,65 L20,45 L20,25 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
+                    }
+                  </svg>
+                  <span class="continent-name" [style.color]="loc.color">{{ loc.name }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Start / Waiting -->
+          <div class="start-section">
+            @if (roomPlayers().length >= 2 && isHost()) {
+              <button class="btn-start" [disabled]="!allPlayersReady()" (click)="startGame()">
+                🌍 INICIAR GUERRA MUNDIAL
+              </button>
+              @if (!allPlayersReady()) {
+                <p class="start-hint">Todos los jugadores deben elegir sector</p>
+              }
+            } @else if (roomPlayers().length >= 2) {
+              <div class="waiting-host">⏳ Esperando autorización del Host...</div>
+            } @else {
+              <div class="waiting-players">🛰️ Reclutando operadores... ({{ roomPlayers().length }}/4)</div>
+            }
+          </div>
+        }
+
+      } @else {
+        <!-- Arsenal tab -->
+        <app-arsenal />
+      }
+
+    </main>
+
+    <!-- Leaderboard sidebar -->
+    <aside class="lobby-sidebar">
+      <app-leaderboard [rows]="leaderboardRows()" />
+    </aside>
+
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<div class="lb-panel">
+  <div class="lb-header">
+    <span class="lb-icon">🏆</span>
+    <h3>ÉLITE GLOBAL</h3>
+  </div>
+  <div class="lb-list">
+    @for (row of rows(); track row.username; let i = $index) {
+      <div class="lb-row" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+        <span class="lb-rank">
+          @if (i === 0) { 🥇 }
+          @else if (i === 1) { 🥈 }
+          @else if (i === 2) { 🥉 }
+          @else { {{ i + 1 }} }
+        </span>
+        <span class="lb-name">{{ row.username }}</span>
+        <span class="lb-wins">{{ row.wins }} <small>VIC</small></span>
+      </div>
+    }
+    @if (rows().length === 0) {
+      <div class="lb-empty">Sin datos</div>
+    }
+  </div>
+</div>

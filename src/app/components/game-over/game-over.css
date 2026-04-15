@@ -1,0 +1,149 @@
+.gameover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.9);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.gameover-card {
+  position: relative;
+  width: 90%;
+  max-width: 550px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 60px 48px;
+  text-align: center;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+  animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.go-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 3px;
+  margin-bottom: 24px;
+}
+
+.winner-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-bottom: 40px;
+  text-shadow: 0 0 20px currentColor;
+  line-height: 1.2;
+}
+
+.winner-title.draw {
+  color: #ef4444;
+}
+
+.reward-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 48px;
+  text-align: left;
+}
+
+.reward-header {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+.reward-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reward-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.reward-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.reward-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 24px 0;
+}
+
+.reward-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reward-total-row span {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.reward-total-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 15px rgba(255, 202, 40, 0.5);
+}
+
+.btn-back-lobby {
+  background: var(--primary);
+  color: #000;
+  border: none;
+  width: 100%;
+  padding: 18px;
+  border-radius: 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.2);
+}
+
+.btn-back-lobby:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(0, 229, 255, 0.4);
+  filter: brightness(1.1);
+}
+
+.corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: rgba(255, 255, 255, 0.2);
+  border-style: solid;
+}
+
+.top-left { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+.top-right { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+.bot-left { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+.bot-right { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }

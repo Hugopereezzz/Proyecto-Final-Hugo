@@ -1,0 +1,279 @@
+.hud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.top-bar {
+  pointer-events: auto;
+  padding: 24px 40px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.9) 0%, transparent 100%);
+}
+
+.turn-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.turn-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 2px;
+}
+
+.turn-player {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px currentColor;
+}
+
+.timer-ring {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-svg {
+  position: absolute;
+  inset: 0;
+}
+
+.timer-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.timer-val.danger {
+  color: #ef4444;
+  animation: timerPulse 0.5s infinite alternate;
+}
+
+@keyframes timerPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
+}
+
+.loot-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 202, 40, 0.3);
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.loot-icon { font-size: 1rem; }
+.loot-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.btn-allies {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 202, 40, 0.4);
+}
+
+.btn-allies.pulse {
+  animation: allyPulse 2s infinite;
+}
+
+@keyframes allyPulse {
+  0% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 202, 40, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 202, 40, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 202, 40, 0.4); }
+}
+
+.phase-chip {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.chip {
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 3px solid var(--primary);
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.chip.pulse {
+  animation: opacityPulse 2s infinite;
+}
+
+.chip.defend {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.chip.muted {
+  border-left-color: #475569;
+  color: #94a3b8;
+}
+
+@keyframes opacityPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.btn-leave {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-leave:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Health bars */
+.health-bars {
+  pointer-events: auto;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  background: linear-gradient(0deg, rgba(2, 6, 23, 0.9) 0%, transparent 100%);
+}
+
+.city-card {
+  position: relative;
+  width: 180px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.city-top-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--city-color);
+  box-shadow: 0 0 10px var(--city-color);
+}
+
+.city-card.dead {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.city-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.city-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.bot-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  color: #ef4444;
+  font-weight: 900;
+}
+
+.health-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  background: var(--city-color);
+  box-shadow: 0 0 8px var(--city-color);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.health-fill.critical {
+  animation: healthCritical 0.8s infinite alternate;
+}
+
+@keyframes healthCritical {
+  from { filter: brightness(1) drop-shadow(0 0 5px #ef4444); }
+  to { filter: brightness(1.5) drop-shadow(0 0 15px #ef4444); }
+}
+
+.city-stats {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+}
+
+.city-hp { color: #fff; }
+.city-ammo { color: var(--gold); }
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.skill-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #fff;
+  text-transform: uppercase;
+}

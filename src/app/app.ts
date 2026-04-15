@@ -7,9 +7,22 @@ import { GameState, City, Missile, GamePhase } from './models/game.models';
 import { WebsocketService, RoomPlayer } from './websocket.service';
 import { AuthService, User as AuthUser } from './auth.service';
 
+import { LoginComponent } from './components/login/login';
+import { LobbyComponent } from './components/lobby/lobby';
+import { GameHudComponent } from './components/game-hud/game-hud';
+import { RouletteComponent } from './components/roulette/roulette';
+import { GameOverComponent } from './components/game-over/game-over';
+
 @Component({
   selector: 'app-root',
-  imports: [],
+  standalone: true,
+  imports: [
+    LoginComponent,
+    LobbyComponent,
+    GameHudComponent,
+    RouletteComponent,
+    GameOverComponent
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
