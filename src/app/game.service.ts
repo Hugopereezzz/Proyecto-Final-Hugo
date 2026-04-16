@@ -134,8 +134,8 @@ export class GameService {
   }
 
   launchMissile(state: GameState, fromCityId: number, targetX: number, targetY: number, elapsedMs: number = 0): Missile | null {
-    const city = state.cities[fromCityId];
-    if (city.ammo <= 0) return null;
+    const city = state.cities.find(c => c.id === fromCityId);
+    if (!city || city.ammo <= 0) return null;
     
     city.ammo -= 1;
     
@@ -207,8 +207,8 @@ export class GameService {
   }
 
   launchDefensiveMissile(state: GameState, fromCityId: number, targetMissileId: number, hitSuccess: boolean = true, elapsedMs: number = 0): Missile | null {
-    const city = state.cities[fromCityId];
-    if (city.ammo < 1) return null;
+    const city = state.cities.find(c => c.id === fromCityId);
+    if (!city || city.ammo < 1) return null;
 
     city.ammo -= 1;
 
@@ -476,18 +476,18 @@ export class GameService {
   }
 
   applySkill(state: GameState, cityId: number, skillIndex: number): void {
-    const city = state.cities[cityId];
+    const city = state.cities.find(c => c.id === cityId);
     if (!city || !city.isAlive) return;
 
     switch (skillIndex) {
-      case 0: city.statusEffects.push({ type: 'auto-defense', turns: 2 }); break;
+      case 0: city.statusEffects.push({ type: 'auto-defense', turns: 3 }); break;
       case 1: city.health = Math.min(city.maxHealth, city.health + 20); city.ammo += 10; break;
-      case 2: city.statusEffects.push({ type: 'double-damage', turns: 1 }); break;
-      case 3: city.statusEffects.push({ type: 'stealth', turns: 1 }); break;
-      case 4: state.cities.forEach((c, idx) => { if (idx !== cityId) c.statusEffects.push({ type: 'no-defense', turns: 1 }); }); break;
-      case 5: state.cities.forEach((c, idx) => { if (idx !== cityId) { const theft = Math.min(c.ammo, 10); c.ammo -= theft; city.ammo += theft; } }); break;
-      case 6: city.statusEffects.push({ type: 'hyper-speed', turns: 1 }); break;
-      case 7: city.statusEffects.push({ type: 'double-shot', turns: 1 }); break;
+      case 2: city.statusEffects.push({ type: 'double-damage', turns: 2 }); break;
+      case 3: city.statusEffects.push({ type: 'stealth', turns: 2 }); break;
+      case 4: state.cities.forEach(c => { if (c.id !== cityId) c.statusEffects.push({ type: 'no-defense', turns: 2 }); }); break;
+      case 5: state.cities.forEach(c => { if (c.id !== cityId) { const theft = Math.min(c.ammo, 10); c.ammo -= theft; city.ammo += theft; } }); break;
+      case 6: city.statusEffects.push({ type: 'hyper-speed', turns: 2 }); break;
+      case 7: city.statusEffects.push({ type: 'double-shot', turns: 2 }); break;
     }
     city.activeSkills = city.statusEffects.map(e => e.type);
   }
@@ -497,7 +497,8 @@ export class GameService {
   }
 
   getIncomingMissiles(state: GameState, cityId: number): Missile[] {
-    const city = state.cities[cityId];
+    const city = state.cities.find(c => c.id === cityId);
+    if (!city) return [];
     return state.missiles.filter(m => {
       if (!m.active || m.isDefensive) return false;
       const dist = Math.abs(m.targetX - city.x);

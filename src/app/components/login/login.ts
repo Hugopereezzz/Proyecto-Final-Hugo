@@ -16,6 +16,7 @@ export class LoginComponent {
   authPassword = signal('');
   authError = signal('');
   isLoading = signal(false);
+  isPasswordVisible = signal(false);
 
   updateAuthUser(event: Event) {
     this.authUsername.set((event.target as HTMLInputElement).value);

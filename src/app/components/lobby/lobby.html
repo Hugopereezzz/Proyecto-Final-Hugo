@@ -1,170 +1,318 @@
 <div class="lobby-screen">
+  <!-- Glowing animated background -->
+  <div class="cyber-grid-bg"></div>
+  <div class="ambient-glow"></div>
+
   <div class="lobby-layout">
 
     <!-- Sidebar nav -->
-    <nav class="lobby-nav">
-      <div class="nav-logo">W.A.R</div>
-      <button class="nav-btn" [class.active]="activeTab() === 'lobby'" (click)="activeTab.set('lobby')">
-        <span class="nav-icon">🚀</span>
-        <span>Mando</span>
+    <nav class="lobby-nav glass-panel">
+      <div class="nav-logo glitch" data-text="W.A.R">W.A.R</div>
+      <div class="nav-divider"></div>
+      
+      <button class="nav-btn cyber-btn" [class.active]="activeTab() === 'lobby'" (click)="activeTab.set('lobby')">
+        <span class="nav-icon">🌍</span>
+        <span class="nav-text">MANDO</span>
+        <div class="btn-flare"></div>
       </button>
-      <button class="nav-btn" [class.active]="activeTab() === 'arsenal'" (click)="activeTab.set('arsenal')">
+      
+      <button class="nav-btn cyber-btn" [class.active]="activeTab() === 'arsenal'" (click)="activeTab.set('arsenal')">
         <span class="nav-icon">🛠️</span>
-        <span>Armería</span>
+        <span class="nav-text">ARMERÍA</span>
+        <div class="btn-flare"></div>
       </button>
+
       <div class="nav-spacer"></div>
-      <div class="nav-user">
-        <span class="nav-avatar">{{ (authService.currentUser() || 'A')[0].toUpperCase() }}</span>
-        <span class="nav-username">{{ authService.currentUser() }}</span>
+
+      <div class="user-card glass-subpanel">
+        <div class="nav-avatar">
+          <span class="avatar-letter">{{ (authService.currentUser() || 'A')[0].toUpperCase() }}</span>
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="user-details">
+          <span class="nav-username">{{ authService.currentUser() }}</span>
+          <span class="nav-role">Operador</span>
+        </div>
       </div>
-      <button class="nav-btn danger" (click)="logout()">
-        <span class="nav-icon">🚪</span>
-        <span>Salir</span>
+
+      <button class="nav-btn danger cyber-btn" (click)="logout()">
+        <span class="nav-icon">🛑</span>
+        <span class="nav-text">DESCONECTAR</span>
       </button>
     </nav>
 
     <!-- Main content -->
-    <main class="lobby-main">
+    <main class="lobby-main glass-panel">
+      <!-- Top edge glow -->
+      <div class="panel-glow-top"></div>
 
       @if (activeTab() === 'lobby') {
         <!-- Command Center -->
         @if (!inRoom()) {
-          <div class="section-header">
+          <div class="section-header animated-enter">
             <h1 class="section-title">CENTRO DE MANDO</h1>
-            <p class="section-sub">Bienvenido, Agente <strong>{{ authService.currentUser() }}</strong></p>
+            <p class="section-sub">Sistema en línea. Esperando órdenes, agente <strong class="neon-text">{{ authService.currentUser() }}</strong>.</p>
           </div>
 
-          <div class="room-actions">
-            <button class="btn-create" id="btn-create-room" (click)="createRoom()">
-              <span class="btn-icon">⚡</span>
-              <div>
-                <div class="btn-label">CREAR SALA</div>
-                <div class="btn-hint">Inicia una nueva partida</div>
+          <div class="command-center-layout animated-enter-delay">
+            <div class="cc-left-col">
+              <!-- Top Controls: Create & Join -->
+              <div class="actions-row">
+                <div class="create-action glass-subpanel">
+                  <div class="create-header">NUEVA OPERACIÓN</div>
+                  <div class="toggle-row">
+                    <span class="toggle-label" [class.active]="!isCreatePublic()">PRIVADA</span>
+                    <label class="cyber-switch">
+                      <input type="checkbox" [checked]="isCreatePublic()" (change)="isCreatePublic.set(!isCreatePublic())">
+                      <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label" [class.active]="isCreatePublic()">PÚBLICA</span>
+                  </div>
+                  <button class="btn-create premium-btn" (click)="createRoom()">
+                    <div class="btn-content">
+                      <span class="btn-icon pulse-glow">⚡</span>
+                      <span class="btn-label">DESPLEGAR</span>
+                    </div>
+                    <div class="cyber-lines"></div>
+                  </button>
+                </div>
+
+                <div class="join-divider-vertical">
+                  <span class="divider-line"></span>
+                  <span class="divider-text">O</span>
+                  <span class="divider-line"></span>
+                </div>
+
+                <div class="join-action glass-subpanel">
+                  <div class="create-header">CÓDIGO DE ENLACE</div>
+                  <div class="join-row">
+                    <div class="input-wrapper">
+                      <input
+                        id="input-join-code"
+                        class="join-input cyber-input"
+                        type="text"
+                        placeholder="XXXXXX"
+                        maxlength="6"
+                        [value]="joinRoomId()"
+                        (input)="updateJoinRoomId($event)"
+                      />
+                      <div class="input-scanner"></div>
+                    </div>
+                    <button class="btn-join premium-btn outline" [disabled]="joinRoomId().length < 4" (click)="joinRoom()">
+                      UNIRSE
+                    </button>
+                  </div>
+                </div>
               </div>
-            </button>
 
-            <div class="join-divider"><span>O</span></div>
+              <!-- Public Rooms Lobby -->
+              <div class="public-rooms-lobby glass-subpanel">
+                <div class="lobby-header-row">
+                  <div class="section-title-small">
+                    <span class="icon">📡</span> SECTORES PÚBLICOS ACTIVOS
+                  </div>
+                  <button class="btn-refresh cyber-btn" (click)="wsService.requestPublicRooms()" title="Refrescar Salas">
+                    <span class="icon">🔄</span>
+                  </button>
+                </div>
+                
+                <div class="rooms-list">
+                  @if (publicRooms().length === 0) {
+                    <div class="no-rooms-msg">NO SE DETECTAN OPERACIONES PÚBLICAS.</div>
+                  } @else {
+                    @for (room of publicRooms(); track room.roomId) {
+                      <div class="room-row">
+                        <div class="room-info-col">
+                          <span class="room-id">ID: {{ room.roomId }}</span>
+                          <span class="room-host">Host: <strong class="neon-text">{{ room.hostName }}</strong></span>
+                        </div>
+                        <div class="room-status-col">
+                          <span class="room-players">{{ room.playerCount }}/4 Operadores</span>
+                          <button class="btn-join-public premium-btn outline-small" (click)="joinPublicRoom(room.roomId)">
+                            CONECTAR
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            </div>
 
-            <div class="join-form">
-              <label class="join-label">CÓDIGO DE SALA (6 DÍGITOS)</label>
-              <div class="join-row">
-                <input
-                  id="input-join-code"
-                  class="join-input"
-                  type="text"
-                  placeholder="XXXXXX"
-                  maxlength="6"
-                  [value]="joinRoomId()"
-                  (input)="updateJoinRoomId($event)"
-                />
-                <button class="btn-join" [disabled]="joinRoomId().length < 4" (click)="joinRoom()">
-                  UNIRSE
-                </button>
+            <!-- Global Chat Column -->
+            <div class="cc-right-col">
+              <div class="global-chat-panel glass-subpanel">
+                <div class="chat-header">
+                  <span class="chat-icon">💬</span> COM RED GLOBAL
+                </div>
+                <!-- Chat body with auto scroll -->
+                <div class="chat-messages" id="global-chat-box">
+                  @if (globalChat().length === 0) {
+                    <div class="chat-empty">Sistema de comunicaciones en línea. Sin tráfico reciente.</div>
+                  }
+                  @for (msg of globalChat(); track msg.timestamp) {
+                    <div class="chat-msg">
+                      <span class="chat-author" [class.me]="msg.playerName === authService.currentUser()">
+                        [{{ msg.playerName }}]:
+                      </span>
+                      <span class="chat-text">{{ msg.text }}</span>
+                    </div>
+                  }
+                </div>
+                <!-- Input field -->
+                <div class="chat-input-row">
+                  <input 
+                    type="text" 
+                    class="chat-input cyber-input-small" 
+                    placeholder="Escribir mensaje..."
+                    [value]="chatMessage()"
+                    (input)="updateChatMessage($event)"
+                    (keyup.enter)="sendChatMessage()"
+                  />
+                  <button class="btn-send-chat" (click)="sendChatMessage()">
+                    ENVIAR
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
         } @else {
           <!-- In room -->
-          <div class="room-header">
-            <button class="btn-back" (click)="leaveRoom()">← Salir</button>
+          <div class="room-header glass-subpanel animated-enter">
+            <button class="btn-back cyber-btn" (click)="leaveRoom()">
+              <span class="nav-icon">←</span> ABORTAR
+            </button>
             <div class="room-code-display">
-              <span class="room-code-label">CÓDIGO DE SALA</span>
-              <span class="room-code">{{ currentRoomId() }}</span>
-              <button class="btn-copy" (click)="copyRoomCode()">
-                {{ copyStatus() === '¡Copiado!' ? '✓' : '📋' }}
-                {{ copyStatus() }}
+              <div class="code-info">
+                <span class="room-code-label">ENLACE ACTIVO</span>
+                <span class="room-code glitch-sub">{{ currentRoomId() }}</span>
+              </div>
+              <button class="btn-copy premium-btn outline-small" (click)="copyRoomCode()">
+                <span class="icon">{{ copyStatus() === '¡Copiado!' ? '✓' : '📋' }}</span>
+                <span>{{ copyStatus() }}</span>
               </button>
             </div>
           </div>
 
-          <!-- Players -->
-          <div class="players-section">
-            <h3 class="sub-label">OPERADORES ({{ roomPlayers().length }}/4)</h3>
-            <div class="players-grid">
-              @for (player of roomPlayers(); track player.id) {
-                <div class="player-card" [class.me]="player.name === authService.currentUser()">
-                  <div class="player-avatar"
-                    [style.background]="player.continentIndex >= 0 ? gameService.countryLocations[player.continentIndex].color : '#374151'">
-                    {{ player.name[0].toUpperCase() }}
-                  </div>
-                  <div class="player-info">
-                    <span class="player-name">{{ player.name }}</span>
-                    <span class="player-region">
+          <!-- Players & Continent Grid Layout -->
+          <div class="room-content animated-enter-delay">
+            <!-- Players col -->
+            <div class="players-section">
+              <div class="section-title-small">
+                <span class="icon">👥</span> RED DE OPERADORES ({{ roomPlayers().length }}/4)
+              </div>
+              <div class="players-grid">
+                @for (player of roomPlayers(); track player.id) {
+                  <div class="player-card glass-subpanel" [class.me]="player.name === authService.currentUser()">
+                    <div class="player-avatar-wrapper">
+                      <div class="player-avatar"
+                        [style.background]="player.continentIndex >= 0 ? gameService.countryLocations[player.continentIndex].color : '#1f2937'">
+                        {{ player.name[0].toUpperCase() }}
+                      </div>
                       @if (player.continentIndex >= 0) {
-                        {{ gameService.countryLocations[player.continentIndex].name }}
-                      } @else {
-                        Seleccionando...
+                        <div class="avatar-pulse" [style.border-color]="gameService.countryLocations[player.continentIndex].color"></div>
                       }
-                    </span>
+                    </div>
+                    <div class="player-info">
+                      <span class="player-name">{{ player.name }}</span>
+                      <span class="player-region" [style.color]="player.continentIndex >= 0 ? gameService.countryLocations[player.continentIndex].accent : '#9ca3af'">
+                        @if (player.continentIndex >= 0) {
+                          <span class="status-dot"></span> {{ gameService.countryLocations[player.continentIndex].name }}
+                        } @else {
+                          Analizando...
+                        }
+                      </span>
+                    </div>
+                    @if (player.name === authService.currentUser()) {
+                      <span class="badge-you">LOCAL</span>
+                    }
                   </div>
-                  @if (player.name === authService.currentUser()) {
-                    <span class="badge-you">TÚ</span>
+                }
+              </div>
+              
+              <!-- Start / Waiting inside the players col for better flow -->
+              <div class="start-section">
+                @if (roomPlayers().length >= 2 && isHost()) {
+                  <button class="btn-start premium-btn glowing" [disabled]="!allPlayersReady()" (click)="startGame()">
+                    <span class="icon">🚀</span> INICIAR DEFENSA GLOBAL
+                    <div class="btn-flare"></div>
+                  </button>
+                  @if (!allPlayersReady()) {
+                    <p class="start-hint alert-text">SE REQUIERE CONFIRMACIÓN DE SECTOR DE TODOS LOS OPERADORES</p>
                   }
-                </div>
-              }
+                } @else if (roomPlayers().length >= 2) {
+                  <div class="waiting-box glass-subpanel">
+                    <span class="spinner-icon">⏳</span> ESPERANDO AUTORIZACIÓN DEL LÍDER
+                  </div>
+                } @else {
+                  <div class="waiting-box glass-subpanel">
+                    <span class="pulse-icon">📡</span> BUSCANDO HOMÓLOGOS... ({{ roomPlayers().length }}/4)
+                  </div>
+                }
+              </div>
             </div>
-          </div>
 
-          <!-- Continent selection -->
-          <div class="continent-section">
-            <h3 class="sub-label">SELECCIONA TU SECTOR</h3>
-            <div class="continent-grid">
-              @for (loc of gameService.countryLocations; track loc.name; let i = $index) {
-                <div
-                  class="continent-card"
-                  [class.selected]="myContinentIndex() === i"
-                  [class.taken]="isContinentTaken(i) && myContinentIndex() !== i"
-                  (click)="selectContinent(i)"
-                  [style.--loc-color]="loc.color"
-                >
-                  <svg class="continent-map" viewBox="0 0 100 100">
-                    @if (loc.name === 'Norteamérica') {
-                      <path d="M20,10 L40,8 L55,15 L60,30 L55,40 L45,45 L40,60 L30,45 L15,40 L10,25 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
+            <!-- Continent selection col -->
+            <div class="continent-section">
+              <div class="section-title-small">
+                <span class="icon">🗺️</span> SELECCIÓN DE TEATRO DE OPERACIONES
+              </div>
+              <div class="continent-grid">
+                @for (loc of gameService.countryLocations; track loc.name; let i = $index) {
+                  <div
+                    class="continent-card glass-subpanel"
+                    [class.selected]="myContinentIndex() === i"
+                    [class.taken]="isContinentTaken(i) && myContinentIndex() !== i"
+                    (click)="selectContinent(i)"
+                    [style.--loc-color]="loc.color"
+                    [style.--loc-accent]="loc.accent"
+                  >
+                    <div class="corner top-left"></div>
+                    <div class="corner bottom-right"></div>
+                    
+                    <div class="map-container">
+                      <svg class="continent-map" viewBox="0 0 100 100">
+                        @if (loc.name === 'Norteamérica') {
+                          <path d="M20,10 L40,8 L55,15 L60,30 L55,40 L45,45 L40,60 L30,45 L15,40 L10,25 Z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5"/>
+                        }
+                        @if (loc.name === 'Eurasia') {
+                          <path d="M10,20 L30,15 L50,10 L70,8 L90,15 L95,35 L80,45 L60,50 L40,45 L20,40 Z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5"/>
+                        }
+                        @if (loc.name === 'Sudamérica') {
+                          <path d="M30,10 L50,15 L55,30 L45,60 L35,85 L25,60 L20,30 Z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5"/>
+                        }
+                        @if (loc.name === 'África') {
+                          <path d="M25,15 L50,10 L75,20 L80,45 L65,70 L50,85 L35,65 L20,45 L20,25 Z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1.5"/>
+                        }
+                      </svg>
+                    </div>
+                    <span class="continent-name">{{ loc.name }}</span>
+                    @if (isContinentTaken(i) && myContinentIndex() !== i) {
+                      <div class="overlay-lock">
+                        <span>BLOQUEADO</span>
+                      </div>
                     }
-                    @if (loc.name === 'Eurasia') {
-                      <path d="M10,20 L30,15 L50,10 L70,8 L90,15 L95,35 L80,45 L60,50 L40,45 L20,40 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
-                    }
-                    @if (loc.name === 'Sudamérica') {
-                      <path d="M30,10 L50,15 L55,30 L45,60 L35,85 L25,60 L20,30 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
-                    }
-                    @if (loc.name === 'África') {
-                      <path d="M25,15 L50,10 L75,20 L80,45 L65,70 L50,85 L35,65 L20,45 L20,25 Z" fill="currentColor" opacity="0.5" stroke="currentColor" stroke-width="1.5"/>
-                    }
-                  </svg>
-                  <span class="continent-name" [style.color]="loc.color">{{ loc.name }}</span>
-                </div>
-              }
+                  </div>
+                }
+              </div>
             </div>
-          </div>
-
-          <!-- Start / Waiting -->
-          <div class="start-section">
-            @if (roomPlayers().length >= 2 && isHost()) {
-              <button class="btn-start" [disabled]="!allPlayersReady()" (click)="startGame()">
-                🌍 INICIAR GUERRA MUNDIAL
-              </button>
-              @if (!allPlayersReady()) {
-                <p class="start-hint">Todos los jugadores deben elegir sector</p>
-              }
-            } @else if (roomPlayers().length >= 2) {
-              <div class="waiting-host">⏳ Esperando autorización del Host...</div>
-            } @else {
-              <div class="waiting-players">🛰️ Reclutando operadores... ({{ roomPlayers().length }}/4)</div>
-            }
           </div>
         }
 
       } @else {
         <!-- Arsenal tab -->
-        <app-arsenal />
+        <div class="animated-enter">
+          <app-arsenal />
+        </div>
       }
 
     </main>
 
     <!-- Leaderboard sidebar -->
-    <aside class="lobby-sidebar">
-      <app-leaderboard [rows]="leaderboardRows()" />
+    <aside class="lobby-sidebar glass-panel animated-slide-in">
+      <div class="panel-glow-top" style="background: var(--gold);"></div>
+      <app-leaderboard [rows]="leaderboardRows()" (refresh)="refreshLeaderboard.emit()" />
     </aside>
 
   </div>

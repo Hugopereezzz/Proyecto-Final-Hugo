@@ -9,6 +9,7 @@ import { City } from '../../models/game.models';
 })
 export class GameOverComponent {
   winner       = input<City | null>(null);
+  endReason    = input<'domination' | 'survivor' | 'draw'>('draw');
   winBonus     = input.required<number>();
   lootEarned   = input.required<number>();
   totalEarnings = input.required<number>();

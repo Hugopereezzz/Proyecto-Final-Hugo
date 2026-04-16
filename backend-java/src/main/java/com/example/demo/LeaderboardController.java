@@ -39,7 +39,7 @@ public class LeaderboardController {
             u.setWins(u.getWins() + 1);
             u.setCredits(u.getCredits() + 100); // 100 Credits for a win
             userRepository.save(u);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(u);
         }
         return ResponseEntity.notFound().build();
     }
@@ -53,7 +53,7 @@ public class LeaderboardController {
             User u = user.get();
             u.setCredits(u.getCredits() + request.buildingsDestroyed); // 1 Credit per building
             userRepository.save(u);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(u);
         }
         return ResponseEntity.notFound().build();
     }

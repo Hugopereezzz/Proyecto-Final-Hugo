@@ -18,6 +18,7 @@
       (gameStarted)="gamePhase.set('aiming')"
       (leftRoom)="leaveGame()"
       (loggedOut)="logout()"
+      (refreshLeaderboard)="refreshLeaderboard()"
     />
   }
 
@@ -56,10 +57,11 @@
   @if (gamePhase() === 'gameover') {
     <app-game-over 
       [winner]="winner()"
+      [endReason]="endReason()"
       [winBonus]="winBonus()"
       [lootEarned]="state.lootEarned"
       [totalEarnings]="totalEarnings()"
-      (playAgain)="resetGame()"
+      (playAgain)="returnToLobby()"
     />
   }
 

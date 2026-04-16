@@ -56,6 +56,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         public boolean inGame = false;
         public long lastTurnTime = System.currentTimeMillis();
         public int turnCount = 0;
+        public boolean isPublic = false;
+        public String hostName = "";
     }
 
     @Override
@@ -88,6 +90,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     rooms.remove(room.id);
                 } else {
                     broadcast(room, "room-update", room.players);
+                }
+                if (room.isPublic && !room.inGame) {
+                    broadcastPublicRooms();
                 }
             }
         }
@@ -129,6 +134,51 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             case "convert-to-bot":
                 handleConvertToBot(session, data);
                 break;
+            case "global-chat":
+                handleGlobalChat(session, data);
+                break;
+            case "get-public-rooms":
+                send(session, "public-rooms-update", getPublicRoomsList());
+                break;
+        }
+    }
+
+    private void handleGlobalChat(WebSocketSession session, Map<String, Object> data) throws IOException {
+        String playerName = (String) data.getOrDefault("playerName", "Unknown");
+        String text = (String) data.getOrDefault("text", "");
+        if (text.isEmpty()) return;
+        
+        Map<String, Object> msg = new HashMap<>();
+        msg.put("playerName", playerName);
+        msg.put("text", text);
+        msg.put("timestamp", System.currentTimeMillis());
+        
+        String message = mapper.writeValueAsString(Map.of("type", "global-chat-message", "data", msg));
+        TextMessage textMessage = new TextMessage(message);
+        for (WebSocketSession s : sessions.values()) {
+            if (s.isOpen()) s.sendMessage(textMessage);
+        }
+    }
+
+    private List<Map<String, Object>> getPublicRoomsList() {
+        return rooms.values().stream()
+            .filter(r -> r.isPublic && !r.inGame && r.players.size() < 4)
+            .map(r -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("roomId", r.id);
+                map.put("hostName", r.hostName);
+                map.put("playerCount", r.players.size());
+                return map;
+            })
+            .collect(Collectors.toList());
+    }
+
+    private void broadcastPublicRooms() throws IOException {
+        List<Map<String, Object>> publicRooms = getPublicRoomsList();
+        String message = mapper.writeValueAsString(Map.of("type", "public-rooms-update", "data", publicRooms));
+        TextMessage textMessage = new TextMessage(message);
+        for (WebSocketSession s : sessions.values()) {
+            if (s.isOpen()) s.sendMessage(textMessage);
         }
     }
 
@@ -156,6 +206,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (room != null && room.inGame) {
             room.inGame = false; // Prevent double reporting
             
+            // Remove disconnected players/bots so the room is clean for the next game
+            room.players.removeIf(p -> p.isBot);
+            
+            // Reset continent selection for remaining players
+            for (Player p : room.players) {
+                p.continentIndex = -1;
+            }
+
+            if (room.players.isEmpty()) {
+                rooms.remove(roomId);
+                return;
+            }
+            
             // Record win in DB
             Optional<User> userOpt = userRepository.findByUsername(winnerName);
             if (userOpt.isPresent()) {
@@ -166,6 +229,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             }
 
             broadcast(room, "game-over", Map.of("winnerName", winnerName));
+            broadcast(room, "room-update", room.players);
+            
+            if (room.isPublic) {
+                broadcastPublicRooms();
+            }
         }
     }
 
@@ -193,10 +261,21 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private void handleCreateRoom(WebSocketSession session, Map<String, Object> data) throws IOException {
         String playerName = (String) data.get("playerName");
+        
+        Object isPublicRaw = data.get("isPublic");
+        boolean isPublic = false;
+        if (isPublicRaw instanceof Boolean) {
+            isPublic = (Boolean) isPublicRaw;
+        } else if (isPublicRaw instanceof String) {
+            isPublic = Boolean.parseBoolean((String) isPublicRaw);
+        }
+        
         String roomId = generateRoomId();
         
         Room room = new Room();
         room.id = roomId;
+        room.isPublic = isPublic;
+        room.hostName = playerName;
         rooms.put(roomId, room);
 
         Player host = new Player();
@@ -209,6 +288,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         send(session, "room-created", Map.of("success", true, "roomId", roomId, "cityId", 0));
         broadcast(room, "room-update", room.players);
+        
+        if (room.isPublic) {
+            broadcastPublicRooms();
+        }
     }
 
     private void handleJoinRoom(WebSocketSession session, Map<String, Object> data) throws IOException {
@@ -236,13 +319,25 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Player p = new Player();
         p.id = session.getId();
         p.name = playerName;
-        p.cityId = room.players.size();
+        
+        int maxCityId = -1;
+        for (Player existing : room.players) {
+            if (existing.cityId > maxCityId) {
+                maxCityId = existing.cityId;
+            }
+        }
+        p.cityId = maxCityId + 1;
+        
         room.players.add(p);
         
         playerRooms.put(session.getId(), room);
 
         send(session, "room-joined", Map.of("success", true, "roomId", roomId, "cityId", p.cityId));
         broadcast(room, "room-update", room.players);
+        
+        if (room.isPublic) {
+            broadcastPublicRooms();
+        }
     }
 
     private void handleStartGame(WebSocketSession session, Map<String, Object> data) throws IOException {
@@ -250,7 +345,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Room room = rooms.get(roomId);
         if (room != null && !room.inGame) {
             room.inGame = true;
+            room.turnCount = 0;
             broadcast(room, "game-started", Map.of("players", room.players));
+            if (room.isPublic) {
+                broadcastPublicRooms();
+            }
         }
     }
 

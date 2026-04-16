@@ -37,13 +37,24 @@
         <span class="field-icon">⬡</span>
         <input
           id="login-password"
-          type="password"
+          [type]="isPasswordVisible() ? 'text' : 'password'"
           autocomplete="current-password"
           [value]="authPassword()"
           (input)="updateAuthPass($event)"
           placeholder=" "
         />
         <label for="login-password">Contraseña</label>
+        <button class="btn-show-pass"
+          type="button"
+          (mousedown)="isPasswordVisible.set(true)"
+          (mouseup)="isPasswordVisible.set(false)"
+          (mouseleave)="isPasswordVisible.set(false)"
+          (touchstart)="isPasswordVisible.set(true)"
+          (touchend)="isPasswordVisible.set(false)"
+          title="Mantener para ver"
+        >
+          {{ isPasswordVisible() ? '👁️' : '👁️‍🗨️' }}
+        </button>
         <div class="field-line"></div>
       </div>
 

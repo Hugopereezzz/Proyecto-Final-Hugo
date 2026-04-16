@@ -68,8 +68,10 @@ export class AuthService {
 
   async recordWin(username: string) {
     try {
-      await firstValueFrom(this.http.post(`${this.apiUrl}/leaderboard/win`, { username }));
-      // Refresh local credits if possible, or just wait for next login
+      const res: any = await firstValueFrom(this.http.post(`${this.apiUrl}/leaderboard/win`, { username }));
+      if (res && res.username) {
+        this.currentUserStats.set(res);
+      }
     } catch (err) {
       console.warn("Could not record win", err);
     }
@@ -77,7 +79,10 @@ export class AuthService {
 
   async recordPayout(username: string, buildingsDestroyed: number) {
     try {
-      await firstValueFrom(this.http.post(`${this.apiUrl}/leaderboard/payout`, { username, buildingsDestroyed }));
+      const res: any = await firstValueFrom(this.http.post(`${this.apiUrl}/leaderboard/payout`, { username, buildingsDestroyed }));
+      if (res && res.username) {
+        this.currentUserStats.set(res);
+      }
     } catch (err) {
       console.warn("Could not record payout", err);
     }

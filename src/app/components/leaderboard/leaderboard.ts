@@ -11,4 +11,5 @@ import { GameService } from '../../game.service';
 })
 export class LeaderboardComponent {
   rows = input.required<AuthUser[]>();
+  refresh = output<void>();
 }

@@ -8,9 +8,19 @@
     <div class="go-badge">＞＿ COMBATE FINALIZADO</div>
 
     @if (winner()) {
-      <h2 class="winner-title" [style.color]="winner()!.color">
-        🏆 {{ winner()!.name }} HA DOMINADO 🏆
-      </h2>
+      @if (winBonus() === 0) {
+        <h2 class="winner-title draw">
+          ❌ HAS SIDO ELIMINADO ❌
+        </h2>
+      } @else if (endReason() === 'survivor') {
+        <h2 class="winner-title survivor">
+          🌿 ERES EL ÚNICO SUPERVIVIENTE 🌿
+        </h2>
+      } @else {
+        <h2 class="winner-title" [style.color]="winner()!.color">
+          🏆 VICTORIA TOTAL 🏆
+        </h2>
+      }
     } @else {
       <h2 class="winner-title draw">💀 ANIQUILACIÓN MUTUA 💀</h2>
     }

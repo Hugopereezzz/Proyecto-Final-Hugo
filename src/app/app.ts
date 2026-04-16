@@ -51,6 +51,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   turnTimer = signal(30);
   cities = signal<City[]>([]);
   winner = signal<City | null>(null);
+  endReason = signal<'domination' | 'survivor' | 'draw'>('draw');
   canDefend = signal<boolean>(false);
   
   // Roulette signals
@@ -93,6 +94,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   private defenseTimeout: any = null;
   private lastFrameTime = 0;
   private screenShake = 0;
+  private hasPaidOut = false;
 
   // Auth & Leaderboard State
   authUsername = signal('');
@@ -149,7 +151,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   isMyTurn() {
     if (!this.state) return false;
-    return this.state.currentPlayerIndex === this.myCityId();
+    const currentCity = this.state.cities[this.state.currentPlayerIndex];
+    return currentCity && currentCity.id === this.myCityId();
   }
 
   isHost() {
@@ -206,6 +209,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         if (rp) rp.isBot = true;
         this.roomPlayers.set([...this.roomPlayers()]);
         this.syncSignals();
+        this.checkAutoWinVsBots();
       }
     });
 
@@ -270,7 +274,15 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         const winnerCity = this.state.cities.find(c => 
           this.roomPlayers().find(p => p.cityId === c.id)?.name === data.winnerName
         );
+        this.state.winner = winnerCity || null;
         this.winner.set(winnerCity || null);
+        
+        const myUser = this.authService.currentUser();
+        if (myUser && !this.hasPaidOut) {
+           this.hasPaidOut = true;
+           this.authService.recordPayout(myUser, this.state.lootEarned);
+        }
+
         this.syncSignals();
         this.refreshLeaderboard();
       }
@@ -464,7 +476,22 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     this.currentRoomId.set('');
     this.myCityId.set(-1);
     this.winner.set(null);
+    this.endReason.set('draw');
     this.turnTimer.set(30);
+    this.hasPaidOut = false;
+  }
+
+  returnToLobby(): void {
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.gamePhase.set('setup');
+    // We keep inRoom(true) and currentRoomId()
+    this.winner.set(null);
+    this.endReason.set('draw');
+    this.turnTimer.set(30);
+    this.hasPaidOut = false;
+    // Reset city selections if hosted wants to re-choose? 
+    // Actually, usually they stay. Let's just clear the game state if it exists.
+    this.state = null as any; 
   }
 
   onCanvasClick(event: MouseEvent): void {
@@ -480,8 +507,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
       this.handleAimClick(x, y);
     } else if (this.state.phase === 'defending' && !this.isMyTurn()) {
       // Check for EMP
-      const myCity = this.state.cities[this.myCityId()];
-      if (myCity.activeSkills.includes('no-defense')) {
+      const myCity = this.state.cities.find(c => c.id === this.myCityId());
+      if (myCity && myCity.activeSkills.includes('no-defense')) {
          console.log("Defense blocked by EMP!");
          return;
       }
@@ -535,22 +562,21 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const groundY = this.canvasRef.nativeElement.height - 60;
     if (y > groundY) return;
 
-    const currentCity = this.state.cities[this.myCityId()];
+    const currentCity = this.state.cities.find(c => c.id === this.myCityId());
     if (!currentCity || currentCity.ammo <= 0) return;
 
-    const dist = Math.abs(x - currentCity.x);
+    const dist = Math.hypot(x - currentCity.x, y - currentCity.y);
     if (dist < 80) return;
 
     this.wsService.launchMissile(this.currentRoomId(), this.myCityId(), x, y);
-    const c = this.state.cities[this.myCityId()];
-    if (c) c.afkCount = 0; // reset afk on manual shoot
+    if (currentCity) currentCity.afkCount = 0; // reset afk on manual shoot
   }
 
   private handleDefenseClick(x: number, y: number): void {
     if (this.defenseUsed) return;
     
-    const myCity = this.state.cities[this.myCityId()];
-    if (!myCity.isAlive || myCity.ammo < 2) return;
+    const myCity = this.state.cities.find(c => c.id === this.myCityId());
+    if (!myCity || !myCity.isAlive || myCity.ammo < 2) return;
 
     const incomingMissiles = this.state.missiles.filter(m => m.active && !m.isDefensive);
     let closest: Missile | null = null;
@@ -609,18 +635,22 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         
         if (aliveCities.length === 1) {
           winnerCity = aliveCities[0];
+          this.endReason.set('domination');
         } else if (aliveWithAmmo.length === 0) {
              let maxH = -1;
              for (const c of aliveCities) {
                 if (c.health > maxH) { maxH = c.health; winnerCity = c; }
                 else if (c.health === maxH) winnerCity = null; // draw
              }
+             this.endReason.set(winnerCity ? 'domination' : 'draw');
         }
         
+        this.state.winner = winnerCity;
         this.winner.set(winnerCity);
         
         const myUser = this.authService.currentUser();
-        if (myUser) {
+        if (myUser && !this.hasPaidOut) {
+           this.hasPaidOut = true;
            // Auth-Gate: Report victory to server only if I am the winner
            // The server handles recording the win in the DB once.
            if (winnerCity && this.roomPlayers().find(p => p.cityId === winnerCity!.id)?.name === myUser) {
@@ -635,7 +665,11 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      if (this.myCityId() === 0) {
+      // Evaluate bot win/loss
+      this.checkAutoWinVsBots();
+      if (this.state.phase === 'gameover') return;
+
+      if (this.isHost()) {
          const currentTurnIdx = this.state.currentPlayerIndex;
          let next = (currentTurnIdx + 1) % this.state.cities.length;
          let attempts = 0;
@@ -650,6 +684,39 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     };
 
     setTimeout(waitForSettle, 500);
+  }
+
+  private checkAutoWinVsBots(): void {
+    if (this.state.phase === 'gameover') return;
+    
+    const aliveRealCities = this.state.cities.filter(c => c.isAlive && !c.isBot);
+    const aliveBotCities = this.state.cities.filter(c => c.isAlive && c.isBot);
+    
+    // Si solo queda 1 jugador real y el resto son bots vivos, gana automáticamente
+    if (aliveRealCities.length === 1 && aliveBotCities.length > 0) {
+      this.state.phase = 'gameover';
+      const winnerCity = aliveRealCities[0];
+      this.state.winner = winnerCity;
+      this.winner.set(winnerCity);
+      this.endReason.set('survivor');
+      
+      const myUser = this.authService.currentUser();
+      if (myUser && !this.hasPaidOut) {
+         this.hasPaidOut = true;
+         if (this.roomPlayers().find(p => p.cityId === winnerCity.id)?.name === myUser) {
+            this.wsService.reportVictory(this.currentRoomId(), myUser);
+         }
+         this.authService.recordPayout(myUser, this.state.lootEarned);
+      }
+      this.syncSignals();
+    } else if (aliveRealCities.length === 0) {
+      // Si no quedan jugadores reales, se acabó
+      this.state.phase = 'gameover';
+      this.state.winner = null;
+      this.winner.set(null);
+      this.endReason.set('draw');
+      this.syncSignals();
+    }
   }
 
   private gameLoop(): void {
@@ -776,7 +843,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
       this.continentPaths.forEach((path, idx) => {
         const isMine = idx === myIdx;
         if (isMine) {
-          ctx.strokeStyle = this.state.cities[this.myCityId()]?.color || '#00e5ff';
+          ctx.strokeStyle = this.state.cities.find(c => c.id === this.myCityId())?.color || '#00e5ff';
           ctx.lineWidth = 2.5;
           ctx.fillStyle = ctx.strokeStyle + '44';
           ctx.shadowBlur = 15;

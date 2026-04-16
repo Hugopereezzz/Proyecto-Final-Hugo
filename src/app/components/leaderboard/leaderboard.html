@@ -1,7 +1,12 @@
 <div class="lb-panel">
-  <div class="lb-header">
-    <span class="lb-icon">🏆</span>
-    <h3>ÉLITE GLOBAL</h3>
+  <div class="lb-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="lb-icon">🏆</span>
+      <h3 style="margin:0;">ÉLITE GLOBAL</h3>
+    </div>
+    <button class="cyber-btn" (click)="refresh.emit()" title="Refrescar Ranking" style="padding:4px 8px; font-size:0.7rem; border-radius:4px;">
+      <span class="icon">🔄</span>
+    </button>
   </div>
   <div class="lb-list">
     @for (row of rows(); track row.username; let i = $index) {

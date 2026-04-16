@@ -49,6 +49,11 @@
   color: #ef4444;
 }
 
+.winner-title.survivor {
+  color: #10b981;
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
 .reward-panel {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);

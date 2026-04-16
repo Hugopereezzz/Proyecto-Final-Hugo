@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 
 export interface RoomPlayer {
@@ -25,6 +25,9 @@ export class WebsocketService {
   private createRoomResolve?: (res: any) => void;
   private joinRoomResolve?: (res: any) => void;
 
+  publicRooms = signal<any[]>([]);
+  globalChat = signal<any[]>([]);
+
   disconnect() {
     if (this.socket) {
       this.socket.close();
@@ -39,6 +42,15 @@ export class WebsocketService {
       if (!payload.type) return;
 
       switch (payload.type) {
+        case 'public-rooms-update':
+          this.publicRooms.set(payload.data);
+          break;
+        case 'global-chat-message':
+          this.globalChat.update(chat => {
+            const newChat = [...chat, payload.data];
+            return newChat.length > 50 ? newChat.slice(-50) : newChat;
+          });
+          break;
         case 'room-created':
           if (this.createRoomResolve) {
             this.createRoomResolve(payload.data);
@@ -80,10 +92,18 @@ export class WebsocketService {
     };
   }
 
-  createRoom(playerName: string): Promise<any> {
+  requestPublicRooms() {
+    this.send('get-public-rooms', {});
+  }
+
+  sendGlobalChat(playerName: string, text: string) {
+    this.send('global-chat', { playerName, text });
+  }
+
+  createRoom(playerName: string, isPublic: boolean = false): Promise<any> {
     return new Promise((resolve) => {
       this.createRoomResolve = resolve;
-      this.send('create-room', { playerName });
+      this.send('create-room', { playerName, isPublic });
     });
   }
 
