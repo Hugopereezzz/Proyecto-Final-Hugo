@@ -58,6 +58,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         public int turnCount = 0;
         public boolean isPublic = false;
         public String hostName = "";
+        public int currentPlayerIndex = 0;
+        public int currentPlayerId = 0;
     }
 
     @Override
@@ -346,6 +348,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (room != null && !room.inGame) {
             room.inGame = true;
             room.turnCount = 0;
+            room.currentPlayerIndex = 0;
+            // Set host (first player) as current player
+            if (!room.players.isEmpty()) {
+                room.currentPlayerId = room.players.get(0).cityId;
+            }
             broadcast(room, "game-started", Map.of("players", room.players));
             if (room.isPublic) {
                 broadcastPublicRooms();
@@ -370,7 +377,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             Map<String, Object> mutableData = new HashMap<>(data);
             mutableData.put("timestamp", System.currentTimeMillis());
             // Move probabilistic decision to server for synchronization
-            mutableData.put("hitSuccess", random.nextDouble() < 0.5);
+            mutableData.put("hitSuccess", true);
             broadcast(room, "defense-launched", mutableData);
         }
     }
@@ -380,6 +387,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Room room = rooms.get(roomId);
         if (room != null) {
             room.turnCount++;
+            
+            Integer nextIdx = (Integer) data.get("nextPlayerIndex");
+            Integer nextCityId = (Integer) data.get("nextCityId");
+            
+            if (nextIdx != null) room.currentPlayerIndex = nextIdx;
+            if (nextCityId != null) room.currentPlayerId = nextCityId;
+            
             broadcast(room, "turn-advanced", data);
 
             // Trigger roulette every 4 turns

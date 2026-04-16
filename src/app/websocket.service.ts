@@ -126,8 +126,8 @@ export class WebsocketService {
     this.send('launch-defense', { roomId, fromCityId, targetMissileId });
   }
 
-  advanceTurn(roomId: string, nextPlayerIndex: number) {
-    this.send('advance-turn', { roomId, nextPlayerIndex });
+  advanceTurn(roomId: string, nextPlayerIndex: number, nextCityId: number) {
+    this.send('advance-turn', { roomId, nextPlayerIndex, nextCityId });
   }
 
   chooseContinent(roomId: string, continentIndex: number) {

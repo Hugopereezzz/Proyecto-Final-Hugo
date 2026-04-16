@@ -243,29 +243,29 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.wsService.turnAdvanced$.subscribe(data => {
-      this.gameService.advanceTurn(this.state);
+      this.gameService.advanceTurn(this.state, data.nextPlayerIndex, data.nextCityId);
       this.turnTimer.set(30);
       this.syncSignals();
     });
 
     this.wsService.skillRoulette$.subscribe(data => {
-      // Find my own assignment to show my roulette animation
       const myName = this.authService.currentUser();
       const myAssignment = data.assignments.find((a: any) => a.playerName === myName);
-      
+
+      // Delay application for all players until roulette finishes visually (3.5s)
+      setTimeout(() => {
+        data.assignments.forEach((a: any) => {
+          const p = this.roomPlayers().find(rp => rp.name === a.playerName);
+          if (p && this.state) {
+            this.gameService.applySkill(this.state, p.cityId, a.skillIndex);
+          }
+        });
+        this.syncSignals();
+      }, 3500);
+
       if (myAssignment) {
         this.triggerRouletteAnimation(myAssignment.playerName, myAssignment.skillIndex);
       }
-
-      // Apply ALL assignments to the underlying game state immediately
-      data.assignments.forEach((a: any) => {
-        const p = this.roomPlayers().find(rp => rp.name === a.playerName);
-        if (p) {
-          this.gameService.applySkill(this.state, p.cityId, a.skillIndex);
-        }
-      });
-      // We don't sync signals here if animation is running, 
-      // triggerRouletteAnimation will sync at the end for the visual 'win'
     });
 
     this.wsService.gameOver$.subscribe(data => {
@@ -285,6 +285,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
         this.syncSignals();
         this.refreshLeaderboard();
+        if (myUser) {
+          setTimeout(() => this.authService.refreshUserStats(myUser), 500);
+        }
       }
     });
   }
@@ -495,6 +498,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCanvasClick(event: MouseEvent): void {
+    if (!this.state) return;
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -530,15 +534,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         this.rouletteDisplaySkill.set(this.skillNames[index]);
         this.rouletteSkillDescription.set(this.skillDescriptions[index]);
         
-        // Apply logic after 3.5s delay
+        // Animation finishes - just close it
         setTimeout(() => {
           this.rouletteVisible.set(false);
           this.rouletteSkillDescription.set('');
-          const targetPlayer = this.roomPlayers().find(p => p.name === playerName);
-          if (targetPlayer) {
-            this.gameService.applySkill(this.state, targetPlayer.cityId, index);
-            this.syncSignals();
-          }
         }, 3500);
       }
     }, 100);
@@ -659,6 +658,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
            
            // Reward for ALL loot earned during this match (payout is safe to call from client as it sums up)
            this.authService.recordPayout(myUser, this.state.lootEarned);
+           setTimeout(() => this.authService.refreshUserStats(myUser), 1000);
         }
         
         this.syncSignals();
@@ -679,7 +679,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
             next = (next + 1) % this.state.cities.length;
             attempts++;
          }
-         this.wsService.advanceTurn(this.currentRoomId(), next);
+         const nextCityId = this.state.cities[next].id;
+         this.wsService.advanceTurn(this.currentRoomId(), next, nextCityId);
       }
     };
 
@@ -706,7 +707,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
          if (this.roomPlayers().find(p => p.cityId === winnerCity.id)?.name === myUser) {
             this.wsService.reportVictory(this.currentRoomId(), myUser);
          }
-         this.authService.recordPayout(myUser, this.state.lootEarned);
+          this.authService.recordPayout(myUser, this.state.lootEarned);
+          setTimeout(() => this.authService.refreshUserStats(myUser), 1000);
       }
       this.syncSignals();
     } else if (aliveRealCities.length === 0) {
@@ -728,7 +730,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const safeDelta = Math.min(deltaTime, 100);
 
     // Timer Logic
-    if (this.state.phase === 'aiming' && !this.winner()) {
+    if (this.state && this.state.phase === 'aiming' && !this.winner()) {
       const currentTimer = this.turnTimer();
       const newTimer = currentTimer - (safeDelta / 1000);
       this.turnTimer.set(Math.max(0, newTimer));

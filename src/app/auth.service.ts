@@ -123,4 +123,15 @@ export class AuthService {
       return { success: false, message: err.error?.message || 'Fallo en la compra' };
     }
   }
+
+  async refreshUserStats(username: string): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this.http.get(`${this.apiUrl}/auth/stats/${username}`));
+      if (res && res.username) {
+        this.currentUserStats.set(res);
+      }
+    } catch (err) {
+      console.warn("Could not refresh user stats", err);
+    }
+  }
 }

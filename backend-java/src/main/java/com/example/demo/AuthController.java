@@ -69,4 +69,13 @@ public class AuthController {
 
         return ResponseEntity.ok(new AuthResponse(user.get(), true, "Inicio de sesión con éxito"));
     }
+
+    @GetMapping("/stats/{username}")
+    public ResponseEntity<AuthResponse> getStats(@PathVariable String username) {
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new AuthResponse(user.get(), true, "Stats actualizadas"));
+    }
 }

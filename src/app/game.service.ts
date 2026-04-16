@@ -63,7 +63,7 @@ export class GameService {
       }
 
       cities.push({
-        id: i,
+        id: (p.cityId !== undefined && p.cityId !== null) ? p.cityId : i,
         name: loc.name,
         x: loc.x,
         y: loc.y,
@@ -171,9 +171,9 @@ export class GameService {
     state.missiles.push(missile);
 
     if (city.activeSkills.includes('double-shot')) {
-      this.launchMissile(state, fromCityId, targetX + 40, targetY, elapsedMs);
       city.statusEffects = city.statusEffects.filter(e => e.type !== 'double-shot');
       city.activeSkills = city.statusEffects.map(e => e.type);
+      this.launchMissile(state, fromCityId, targetX + 40, targetY, elapsedMs);
     }
 
     return missile;
@@ -252,9 +252,9 @@ export class GameService {
     const dtFactor = deltaTime / 16.6; 
 
     for (const city of state.cities) {
-      if (city.isAlive && city.activeSkills.includes('auto-defense')) {
+      if (city.isAlive && city.activeSkills.includes('auto-defense') && !city.activeSkills.includes('no-defense')) {
         const incoming = state.missiles.find(m => 
-          m.active && !m.isDefensive && 
+          m.active && !m.isDefensive && !m.isStealth &&
           Math.hypot(m.currentX - city.x, m.currentY - city.y) < 300 &&
           !state.missiles.some(dm => dm.isDefensive && dm.targetMissileId === m.id)
         );
@@ -286,7 +286,7 @@ export class GameService {
               this.createExplosion(state, missile.currentX, missile.currentY, '#aaaaaa', true);
             }
           } else {
-            const step = 6 * dtFactor;
+            const step = 25 * dtFactor;
             missile.currentX += (dx / dist) * step;
             missile.currentY += (dy / dist) * step;
             missile.trail.push({ x: missile.currentX, y: missile.currentY, alpha: 1 });
@@ -454,14 +454,27 @@ export class GameService {
     return null;
   }
 
-  advanceTurn(state: GameState): void {
-    let next = (state.currentPlayerIndex + 1) % state.cities.length;
-    let attempts = 0;
-    while (attempts < state.cities.length) {
-      const city = state.cities[next];
-      if (city.isAlive && city.ammo > 0) break;
-      next = (next + 1) % state.cities.length;
-      attempts++;
+  advanceTurn(state: GameState, nextIndex?: number, nextCityId?: number): void {
+    let next: number;
+
+    if (nextCityId !== undefined && nextCityId !== null) {
+      const idx = state.cities.findIndex(c => c.id === nextCityId);
+      if (idx !== -1) {
+        next = idx;
+      } else {
+        next = nextIndex ?? ((state.currentPlayerIndex + 1) % state.cities.length);
+      }
+    } else if (nextIndex !== undefined) {
+      next = nextIndex;
+    } else {
+      next = (state.currentPlayerIndex + 1) % state.cities.length;
+      let attempts = 0;
+      while (attempts < state.cities.length) {
+        const city = state.cities[next];
+        if (city.isAlive && city.ammo > 0) break;
+        next = (next + 1) % state.cities.length;
+        attempts++;
+      }
     }
     
     state.currentPlayerIndex = next;
