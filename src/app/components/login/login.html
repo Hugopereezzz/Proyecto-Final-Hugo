@@ -27,6 +27,7 @@
           autocomplete="off"
           [value]="authUsername()"
           (input)="updateAuthUser($event)"
+          (keydown.enter)="doLogin()"
           placeholder=" "
         />
         <label for="login-username">Usuario</label>
@@ -41,6 +42,7 @@
           autocomplete="current-password"
           [value]="authPassword()"
           (input)="updateAuthPass($event)"
+          (keydown.enter)="doLogin()"
           placeholder=" "
         />
         <label for="login-password">Contraseña</label>

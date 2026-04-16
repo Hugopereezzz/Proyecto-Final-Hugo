@@ -27,7 +27,7 @@ export class LoginComponent {
   }
 
   async doLogin() {
-    if (this.isLoading()) return;
+    if (this.isLoading() || !this.authUsername() || !this.authPassword()) return;
     this.authError.set('');
     this.isLoading.set(true);
     const res = await this.authService.login(this.authUsername(), this.authPassword());
