@@ -40,6 +40,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   playerName = signal('');
   joinRoomId = signal('');
   currentRoomId = signal('');
+  currentRoomName = signal('');
   inRoom = signal(false);
   roomPlayers = signal<RoomPlayer[]>([]);
   myCityId = signal(-1);
@@ -92,6 +93,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   private defenseUsed = false;
   private firingComplete = false;
   private defenseTimeout: any = null;
+  private leaderboardInterval: any = null;
   private lastFrameTime = 0;
   private screenShake = 0;
   private hasPaidOut = false;
@@ -117,7 +119,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   });
 
   myContinentIndex = computed(() => {
-    const me = this.roomPlayers().find(p => p.name === this.authService.currentUser());
+    const me = this.roomPlayers().find(p => p.cityId === this.myCityId());
     return me ? me.continentIndex : -1;
   });
 
@@ -128,12 +130,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   winBonus = computed(() => {
     const w = this.winner();
-    const currentUser = this.authService.currentUser();
-    if (!w || !currentUser) return 0;
+    if (!w) return 0;
     
-    // Check if the winner's city ID belongs to the current user
-    const winnerPlayer = this.roomPlayers().find(p => p.cityId === w.id);
-    return winnerPlayer?.name === currentUser ? 100 : 0;
+    // Check if the winner's city ID matches ours
+    return w.id === this.myCityId() ? 100 : 0;
   });
 
   totalEarnings = computed(() => {
@@ -174,6 +174,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     this.wsService.disconnect();
     this.inRoom.set(false);
     this.currentRoomId.set('');
+    this.currentRoomName.set('');
     this.myCityId.set(-1);
     this.roomPlayers.set([]);
     this.gamePhase.set('auth');
@@ -181,6 +182,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   }
 
   leaveGame() {
+    if (this.currentRoomId()) {
+      this.wsService.leaveRoom(this.currentRoomId());
+    }
     this.wsService.disconnect();
     setTimeout(() => {
       this.wsService.connect();
@@ -290,6 +294,16 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     });
+    this.wsService.leaderboardUpdate$.subscribe(() => {
+      this.refreshLeaderboard();
+    });
+
+    // Auto-refresh leaderboard every 30 seconds for AFK users
+    this.leaderboardInterval = setInterval(() => {
+      if (this.gamePhase() === 'setup') {
+        this.refreshLeaderboard();
+      }
+    }, 30000);
   }
 
   ngAfterViewInit(): void {}
@@ -479,11 +493,13 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     this.gamePhase.set('setup');
     this.inRoom.set(false);
     this.currentRoomId.set('');
+    this.currentRoomName.set('');
     this.myCityId.set(-1);
     this.winner.set(null);
     this.endReason.set('draw');
     this.turnTimer.set(30);
     this.hasPaidOut = false;
+    this.roomPlayers.set([]);
   }
 
   returnToLobby(): void {

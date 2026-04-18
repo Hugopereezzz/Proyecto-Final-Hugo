@@ -331,11 +331,12 @@ button.nav-btn.danger:hover {
 }
 .room-code-display { display: flex; align-items: center; gap: 20px; }
 .code-info { display: flex; flex-direction: column; align-items: flex-end; }
-.room-code-label { font-family: 'Orbitron', sans-serif; font-size: 0.7rem; color: #9ca3af; letter-spacing: 2px; }
-.room-code { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 900; color: var(--primary); letter-spacing: 6px; text-shadow: 0 0 10px rgba(0,229,255,0.4);}
+.room-code-label { font-family: 'Orbitron', sans-serif; font-size: 0.7rem; color: #9ca3af; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+.room-name-display { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.3); text-transform: uppercase; }
+.room-id-hint { font-family: 'monospace'; color: var(--primary); font-size: 0.8rem; margin-top: 2px; opacity: 0.8; letter-spacing: 1px;}
 .premium-btn.outline-small { padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
 
-.room-content { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-top: 10px; flex: 1; min-height: 0;}
+.room-content { display: grid; grid-template-columns: 320px 1fr 300px; gap: 24px; margin-top: 10px; flex: 1; min-height: 0;}
 
 /* Players Vertical List */
 .players-section { display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px;}
@@ -507,7 +508,7 @@ button.nav-btn.danger:hover {
 .continent-card.selected .continent-map path { opacity: 0.6; stroke-width: 2; }
 .continent-card.selected .continent-name { color: var(--loc-color); text-shadow: 0 0 15px var(--loc-color); }
 
-.continent-card.taken { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
+.continent-card.taken { opacity: 0.4; filter: grayscale(1); }
 .overlay-lock {
   position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 5;
   display: flex; align-items: center; justify-content: center;
@@ -516,6 +517,31 @@ button.nav-btn.danger:hover {
   font-family: 'Orbitron', sans-serif; border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px;
   background: rgba(239, 68, 68, 0.1); border-radius: 4px; font-size: 0.8rem; letter-spacing: 2px;
   transform: rotate(-15deg); font-weight: 800; box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+/* Room Chat Specific Layout */
+.room-chat-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.room-chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0, 229, 255, 0.03);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+}
+
+.anim-chat-entry {
+  animation: chatEntry 0.3s ease-out both;
+}
+
+@keyframes chatEntry {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ===== Sidebar Leaderboard ===== */
@@ -572,7 +598,9 @@ button.nav-btn.danger:hover {
 
 .actions-row { display: flex; gap: 20px; flex-wrap: wrap;}
 .create-action, .join-action { flex: 1; min-width: 280px; padding: 20px; display: flex; flex-direction: column; gap: 15px;}
-.create-header { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--primary); letter-spacing: 2px;}
+.create-header { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--primary); letter-spacing: 2px; margin-bottom: 12px;}
+.room-name-wrapper { margin-bottom: 12px; width: 100%; }
+.room-name-input { width: 100%; text-align: center; font-size: 0.8rem; }
 
 .join-divider-vertical {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #6b7280; font-family: 'Orbitron';
@@ -617,16 +645,23 @@ button.nav-btn.danger:hover {
   border-radius: 8px; transition: all 0.2s;
 }
 .room-row:hover { background: rgba(0,229,255,0.04); border-color: rgba(0,229,255,0.2); }
-.room-info-col { display: flex; flex-direction: column; gap: 4px;}
-.room-id { font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff; font-weight: bold; letter-spacing: 2px;}
+.room-info-col { display: flex; flex-direction: column; gap: 4px; flex: 1;}
+.room-name-main { font-family: 'Orbitron', sans-serif; font-size: 1rem; color: #fff; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;}
+.room-meta { display: flex; align-items: center; gap: 12px; }
+.room-id-tag { font-family: 'monospace'; font-size: 0.75rem; color: var(--primary); background: rgba(0, 229, 255, 0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0, 229, 255, 0.2);}
 .room-host { font-size: 0.8rem; color: #9ca3af;}
 .room-status-col { display: flex; align-items: center; gap: 20px;}
 .room-players { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: var(--gold); letter-spacing: 1px;}
 .btn-join-public {font-size: 0.7rem; padding: 10px 20px;}
 
 /* Responsiveness */
+@media (max-width: 1400px) {
+  .room-content { grid-template-columns: 300px 1fr 280px; gap: 15px; }
+}
+
 @media (max-width: 1200px) {
-  .room-content { grid-template-columns: 1fr; }
+  .room-content { grid-template-columns: 1fr; grid-template-rows: auto auto 400px; }
+  .room-chat-section { height: 400px; }
 }
 
 @media (max-width: 1024px), (max-height: 600px) {

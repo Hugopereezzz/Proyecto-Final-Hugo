@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, input, output, signal, computed, OnInit, effect } from '@angular/core';
 import { AuthService, User as AuthUser } from '../../auth.service';
 import { WebsocketService, RoomPlayer } from '../../websocket.service';
 import { GameService } from '../../game.service';
@@ -23,11 +23,12 @@ export class LobbyComponent implements OnInit {
   roomPlayers     = input.required<RoomPlayer[]>();
   inRoom          = input.required<boolean>();
   currentRoomId   = input.required<string>();
+  currentRoomName = input.required<string>();
   myCityId        = input.required<number>();
 
   // Outputs to parent
-  roomCreated = output<{ roomId: string; cityId: number }>();
-  roomJoined  = output<{ roomId: string; cityId: number }>();
+  roomCreated = output<{ roomId: string; roomName: string; cityId: number }>();
+  roomJoined  = output<{ roomId: string; roomName: string; cityId: number }>();
   gameStarted = output<void>();
   leftRoom    = output<void>();
   loggedOut   = output<void>();
@@ -39,17 +40,30 @@ export class LobbyComponent implements OnInit {
   activeTab    = signal<'lobby' | 'arsenal' | 'profile'>('lobby');
 
   chatMessage = signal('');
+  roomChatMessage = signal('');
   isCreatePublic = signal(false);
+  roomNameInput = signal('');
+  roomMessages = signal<any[]>([]);
 
   publicRooms = this.wsService.publicRooms;
   globalChat = this.wsService.globalChat;
 
   ngOnInit() {
     this.wsService.requestPublicRooms();
+    
+    // Subscribe to room chat
+    this.wsService.roomChat$.subscribe(msg => {
+      this.roomMessages.update(msgs => [...msgs, msg]);
+      // Auto-scroll logic handled in template or through a small timeout here
+      setTimeout(() => {
+        const chatBox = document.getElementById('room-chat-box');
+        if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+      }, 50);
+    });
   }
 
   myContinentIndex = computed(() => {
-    const me = this.roomPlayers().find(p => p.name === this.authService.displayName());
+    const me = this.roomPlayers().find(p => p.cityId === this.myCityId());
     return me ? me.continentIndex : -1;
   });
 
@@ -63,7 +77,6 @@ export class LobbyComponent implements OnInit {
   }
 
   selectContinent(index: number) {
-    if (this.isContinentTaken(index) && this.myContinentIndex() !== index) return;
     this.wsService.chooseContinent(this.currentRoomId(), index);
   }
 
@@ -81,9 +94,10 @@ export class LobbyComponent implements OnInit {
   async createRoom() {
     const name = this.authService.displayName() || 'Agente';
     const avatar = this.authService.currentUserStats()?.avatarBase64;
-    const res = await this.wsService.createRoom(name, avatar, this.isCreatePublic());
+    const res = await this.wsService.createRoom(name, avatar, this.isCreatePublic(), this.roomNameInput());
     if (res.success && res.roomId) {
-      this.roomCreated.emit({ roomId: res.roomId, cityId: res.cityId });
+      this.roomMessages.set([]); 
+      this.roomCreated.emit({ roomId: res.roomId, roomName: res.roomName || '', cityId: res.cityId });
     }
   }
 
@@ -92,7 +106,8 @@ export class LobbyComponent implements OnInit {
     const avatar = this.authService.currentUserStats()?.avatarBase64;
     const res = await this.wsService.joinRoom(this.joinRoomId(), name, avatar);
     if (res.success && res.roomId) {
-      this.roomJoined.emit({ roomId: res.roomId, cityId: res.cityId });
+      this.roomMessages.set([]); 
+      this.roomJoined.emit({ roomId: res.roomId, roomName: res.roomName || '', cityId: res.cityId });
     } else {
       alert(res.error || 'Error al unirse a la sala');
     }
@@ -125,12 +140,25 @@ export class LobbyComponent implements OnInit {
     this.chatMessage.set((event.target as HTMLInputElement).value);
   }
 
+  sendRoomChatMessage() {
+    const msg = this.roomChatMessage().trim();
+    if (msg && this.currentRoomId()) {
+      this.wsService.sendRoomChat(this.currentRoomId(), this.authService.displayName() || 'Agente', msg);
+      this.roomChatMessage.set('');
+    }
+  }
+
+  updateRoomChatMessage(event: Event) {
+    this.roomChatMessage.set((event.target as HTMLInputElement).value);
+  }
+
   async joinPublicRoom(roomId: string) {
     const name = this.authService.displayName() || 'Agente';
     const avatar = this.authService.currentUserStats()?.avatarBase64;
     const res = await this.wsService.joinRoom(roomId, name, avatar);
     if (res.success && res.roomId) {
-      this.roomJoined.emit({ roomId: res.roomId, cityId: res.cityId });
+      this.roomMessages.set([]); 
+      this.roomJoined.emit({ roomId: res.roomId, roomName: res.roomName || '', cityId: res.cityId });
     } else {
       alert(res.error || 'Error al unirse a la sala');
     }

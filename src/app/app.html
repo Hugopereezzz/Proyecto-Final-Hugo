@@ -8,9 +8,9 @@
   <!-- 2. SETUP / LOBBY PHASE -->
   @if (gamePhase() === 'setup') {
   <app-lobby [leaderboardRows]="leaderboardRows()" [roomPlayers]="roomPlayers()" [inRoom]="inRoom()"
-    [currentRoomId]="currentRoomId()" [myCityId]="myCityId()"
-    (roomCreated)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
-    (roomJoined)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
+    [currentRoomId]="currentRoomId()" [currentRoomName]="currentRoomName()" [myCityId]="myCityId()"
+    (roomCreated)="currentRoomId.set($event.roomId); currentRoomName.set($event.roomName); myCityId.set($event.cityId); inRoom.set(true)"
+    (roomJoined)="currentRoomId.set($event.roomId); currentRoomName.set($event.roomName); myCityId.set($event.cityId); inRoom.set(true)"
     (gameStarted)="gamePhase.set('aiming')" (leftRoom)="leaveGame()" (loggedOut)="logout()"
     (refreshLeaderboard)="refreshLeaderboard()" />
   }

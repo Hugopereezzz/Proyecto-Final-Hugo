@@ -258,14 +258,13 @@ button {
 .input-group input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(0, 0, 0, 0.3) !important;
+  background: rgba(0, 0, 0, 0.6) !important;
   border: 1px solid var(--border-subtle) !important;
   border-radius: 8px;
   color: #fff !important;
   font-family: 'Inter', sans-serif;
   font-size: 0.95rem;
   transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
 }
 
 .input-group input:focus {
@@ -300,6 +299,7 @@ input:-webkit-autofill {
   transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
   animation: gridMove 20s linear infinite;
   opacity: 0.3;
+  will-change: transform;
 }
 
 @keyframes gridMove {
@@ -318,26 +318,28 @@ input:-webkit-autofill {
   width: 150vw; height: 150vw;
   top: 50%; left: 50%;
   margin-top: -75vw; margin-left: -75vw;
+  will-change: transform;
 }
 
 @keyframes radarSpin { 100% { transform: rotate(360deg); } }
 
 .auth-card {
   position: relative;
-  background: rgba(5, 10, 20, 0.85);
-  backdrop-filter: blur(20px);
+  background: rgba(5, 10, 20, 0.95);
+  backdrop-filter: blur(6px);
   padding: 50px 40px;
   width: 100%; max-width: 480px;
   text-align: center;
   border: 1px solid var(--border-accent);
-  box-shadow: 0 0 50px rgba(0, 229, 255, 0.15), inset 0 0 20px rgba(0, 229, 255, 0.05);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.1), inset 0 0 10px rgba(0, 229, 255, 0.05);
   clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
   animation: authEntry 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
+  will-change: transform, opacity;
 }
 
 @keyframes authEntry {
-  0% { opacity: 0; transform: scale(0.9) translateY(40px); filter: blur(10px); }
+  0% { opacity: 0; transform: scale(0.9) translateY(40px); filter: blur(5px); }
   100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
 }
 
@@ -447,13 +449,13 @@ input:-webkit-autofill {
 
 .lobby-main {
   flex: 1;
-  background: var(--surface-glass);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(6px) saturate(140%);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   padding: 40px;
   display: flex; flex-direction: column;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   position: relative;
   min-height: 0;
   overflow-y: auto;
@@ -588,8 +590,8 @@ input:-webkit-autofill {
 /* Leaderboard Panel */
 .leaderboard-panel {
   width: 280px; flex-shrink: 0;
-  background: var(--surface-glass);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(6px) saturate(140%);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   padding: 32px 24px;
@@ -743,7 +745,7 @@ input:-webkit-autofill {
 /* ===== Modals (Roulette & Game Over) ===== */
 .roulette-overlay, .gameover-overlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(16px);
+  background: rgba(3, 7, 18, 0.90); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
 }
 

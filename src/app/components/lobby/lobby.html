@@ -71,6 +71,10 @@
                 </label>
                 <span class="toggle-label" [class.active]="isCreatePublic()">PÚBLICA</span>
               </div>
+              <div class="room-name-wrapper">
+                <input class="room-name-input cyber-input-small" type="text" placeholder="NOMBRE OPERACIÓN..."
+                  maxlength="20" [value]="roomNameInput()" (input)="roomNameInput.set($any($event.target).value)" />
+              </div>
               <button class="btn-create premium-btn" (click)="createRoom()">
                 <div class="btn-content">
                   <span class="btn-icon pulse-glow">⚡</span>
@@ -119,8 +123,11 @@
               @for (room of publicRooms(); track room.roomId) {
               <div class="room-row">
                 <div class="room-info-col">
-                  <span class="room-id">ID: {{ room.roomId }}</span>
-                  <span class="room-host">Host: <strong class="neon-text">{{ room.hostName }}</strong></span>
+                  <span class="room-name-main">{{ room.roomName || ('Operación de ' + room.hostName) }}</span>
+                  <div class="room-meta">
+                    <span class="room-id-tag">#{{ room.roomId }}</span>
+                    <span class="room-host">Host: <strong class="neon-text">{{ room.hostName }}</strong></span>
+                  </div>
                 </div>
                 <div class="room-status-col">
                   <span class="room-players">{{ room.playerCount }}/4 Operadores</span>
@@ -171,12 +178,13 @@
       <!-- In room -->
       <div class="room-header glass-subpanel animated-enter">
         <button class="btn-back cyber-btn" (click)="leaveRoom()">
-          <span class="nav-icon">←</span> ABORTAR
+          <span class="nav-icon">←</span> SALIR
         </button>
         <div class="room-code-display">
           <div class="code-info">
-            <span class="room-code-label">ENLACE ACTIVO</span>
-            <span class="room-code glitch-sub">{{ currentRoomId() }}</span>
+            <span class="room-code-label">OPERACIÓN ACTIVA</span>
+            <span class="room-name-display glitch-sub">{{ currentRoomName() || ('Operación de ' + authService.displayName()) }}</span>
+            <span class="room-id-hint">#{{ currentRoomId() }}</span>
           </div>
           <button class="btn-copy premium-btn outline-small" (click)="copyRoomCode()">
             <span class="icon">{{ copyStatus() === '¡Copiado!' ? '✓' : '📋' }}</span>
@@ -190,7 +198,7 @@
         <!-- Players col -->
         <div class="players-section">
           <div class="section-title-small">
-            <span class="icon">👥</span> RED DE OPERADORES ({{ roomPlayers().length }}/4)
+            <span class="icon">👥</span> JUGADORES ({{ roomPlayers().length }}/4)
           </div>
           <div class="players-grid">
             @for (player of roomPlayers(); track player.id) {
@@ -233,7 +241,7 @@
           <div class="start-section">
             @if (roomPlayers().length >= 2 && isHost()) {
             <button class="btn-start premium-btn glowing" [disabled]="!allPlayersReady()" (click)="startGame()">
-              <span class="icon">🚀</span> INICIAR DEFENSA GLOBAL
+              <span class="icon">🚀</span> INICIAR PARTIDA
               <div class="btn-flare"></div>
             </button>
             @if (!allPlayersReady()) {
@@ -254,7 +262,7 @@
         <!-- Continent selection col -->
         <div class="continent-section">
           <div class="section-title-small">
-            <span class="icon">🗺️</span> SELECCIÓN DE TEATRO DE OPERACIONES
+            <span class="icon">🗺️</span> SELECCIONA UNA OPCIÓN
           </div>
           <div class="continent-grid">
             @for (loc of gameService.countryLocations; track loc.name; let i = $index) {
@@ -292,6 +300,37 @@
               }
             </div>
             }
+          </div>
+        </div>
+
+        <!-- Room Chat Col -->
+        <div class="room-chat-section">
+          <div class="room-chat-panel glass-subpanel">
+            <div class="chat-header">
+              <span class="chat-icon">👥</span> CHAT DEL LOBBY
+            </div>
+            <div class="chat-messages" id="room-chat-box">
+              @if (roomMessages().length === 0) {
+              <div class="chat-empty">Sistema de comunicaciones de sala activo. Solo visible para miembros de esta
+                partida.</div>
+              }
+              @for (msg of roomMessages(); track msg.timestamp) {
+              <div class="chat-msg anim-chat-entry">
+                <span class="chat-author" [class.me]="msg.playerName === authService.displayName()">
+                  [{{ msg.playerName }}]:
+                </span>
+                <span class="chat-text">{{ msg.text }}</span>
+              </div>
+              }
+            </div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-input cyber-input-small" placeholder="Mensaje a la sala..."
+                [value]="roomChatMessage()" (input)="updateRoomChatMessage($event)"
+                (keyup.enter)="sendRoomChatMessage()" />
+              <button class="btn-send-chat" (click)="sendRoomChatMessage()">
+                ENVIAR
+              </button>
+            </div>
           </div>
         </div>
       </div>

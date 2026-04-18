@@ -22,6 +22,8 @@ export class WebsocketService {
   skillRoulette$ = new Subject<any>();
   gameOver$ = new Subject<any>();
   playerBecameBot$ = new Subject<{cityId: number}>();
+  roomChat$ = new Subject<any>();
+  leaderboardUpdate$ = new Subject<void>();
 
   private createRoomResolve?: (res: any) => void;
   private joinRoomResolve?: (res: any) => void;
@@ -37,6 +39,11 @@ export class WebsocketService {
 
   connect() {
     this.socket = new WebSocket('ws://localhost:8080/game');
+
+    this.socket.onopen = () => {
+      console.log('WS Connection established');
+      this.requestPublicRooms();
+    };
 
     this.socket.onclose = () => {
       setTimeout(() => this.connect(), 2000); // Auto reconnect if backend restarts
@@ -93,6 +100,12 @@ export class WebsocketService {
         case 'player-became-bot':
           this.playerBecameBot$.next(payload.data);
           break;
+        case 'leaderboard-update':
+          this.leaderboardUpdate$.next();
+          break;
+        case 'room-chat-message':
+          this.roomChat$.next(payload.data);
+          break;
       }
     };
   }
@@ -105,10 +118,14 @@ export class WebsocketService {
     this.send('global-chat', { playerName, text });
   }
 
-  createRoom(playerName: string, avatarBase64: string | undefined, isPublic: boolean = false): Promise<any> {
+  sendRoomChat(roomId: string, playerName: string, text: string) {
+    this.send('room-chat', { roomId, playerName, text });
+  }
+
+  createRoom(playerName: string, avatarBase64: string | undefined, isPublic: boolean = false, roomName: string = ''): Promise<any> {
     return new Promise((resolve) => {
       this.createRoomResolve = resolve;
-      this.send('create-room', { playerName, avatarBase64, isPublic });
+      this.send('create-room', { playerName, avatarBase64, isPublic, roomName });
     });
   }
 
@@ -129,6 +146,10 @@ export class WebsocketService {
 
   launchDefense(roomId: string, fromCityId: number, targetMissileId: number) {
     this.send('launch-defense', { roomId, fromCityId, targetMissileId });
+  }
+
+  leaveRoom(roomId: string) {
+    this.send('leave-room', { roomId });
   }
 
   advanceTurn(roomId: string, nextPlayerIndex: number, nextCityId: number) {
