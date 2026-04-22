@@ -52,6 +52,8 @@ export interface Missile {
   hitSuccess?: boolean;
   isStealth?: boolean;
   isNuclear?: boolean;
+  isCluster?: boolean;
+  isSplit?: boolean;
   active: boolean;
   skin?: string;
 }
@@ -91,7 +93,7 @@ export interface Star {
 
 export type GamePhase = 'auth' | 'setup' | 'aiming' | 'firing' | 'defending' | 'result' | 'gameover';
 
-export type WorldEventType = 'solar-storm' | 'arms-treaty' | 'spy-satellite' | 'resource-crisis' | null;
+export type WorldEventType = 'solar-storm' | 'arms-treaty' | 'spy-satellite' | 'resource-crisis' | 'radio-jamming' | 'meteor-shower' | null;
 
 export interface WorldEvent {
   type: WorldEventType;

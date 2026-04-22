@@ -19,6 +19,8 @@ export class GameService {
     { name: 'Escudo de Hierro', icon: '⚔️', desc: '+25% salud inicial', colorHex: '#ff4081' },
     { name: 'Selva Densa', icon: '🌲', desc: 'Misiles viajan en modo sigilo automático', colorHex: '#76ff03' },
     { name: 'Recursos Estratégicos', icon: '💰', desc: '+50% créditos por edificio destruido', colorHex: '#ffab40' },
+    { name: 'Isla Bastión', icon: '🏝️', desc: '+15 munición inicial', colorHex: '#aa00ff' },
+    { name: 'Base de Hielo', icon: '❄️', desc: '+30% salud máxima', colorHex: '#eceff1' },
   ];
 
   // World event pool
@@ -27,6 +29,8 @@ export class GameService {
     { type: 'arms-treaty',    title: '🕊️ TRATADO DE NO PROLIFERACIÓN', description: 'Misiles nucleares bloqueados esta ronda.', icon: '🕊️', turnsActive: 1 },
     { type: 'spy-satellite',  title: '🛰️ SATÉLITE ESPÍA',          description: 'La trayectoria del próximo misil enemigo es visible para todos.', icon: '🛰️', turnsActive: 1 },
     { type: 'resource-crisis',title: '⚡ CRISIS DE RECURSOS',      description: 'Todos los jugadores pierden 5 de munición. ¡Actúa rápido!', icon: '⚡', turnsActive: 1 },
+    { type: 'radio-jamming',  title: '📡 INTERFERENCIA DE RADIO', description: 'El sistema de puntería está fallando. El radar tiembla.', icon: '📡', turnsActive: 1 },
+    { type: 'meteor-shower',  title: '☄️ LLUVIA DE METEORITOS', description: 'Impactos aleatorios en todo el mapa. ¡Cúbrete!', icon: '☄️', turnsActive: 1 },
   ];
 
   private readonly weatherPool: Weather[] = [
@@ -40,7 +44,9 @@ export class GameService {
     { name: 'Norteamérica', x: 260, y: 190, color: '#00e5ff', accent: '#00b8d4' },
     { name: 'Eurasia', x: 860, y: 180, color: '#ff4081', accent: '#f50057' },
     { name: 'Sudamérica', x: 380, y: 500, color: '#76ff03', accent: '#64dd17' },
-    { name: 'África', x: 650, y: 420, color: '#ffab40', accent: '#ff9100' }
+    { name: 'África', x: 650, y: 420, color: '#ffab40', accent: '#ff9100' },
+    { name: 'Oceanía', x: 1000, y: 550, color: '#aa00ff', accent: '#d500f9' },
+    { name: 'Antártida', x: 740, y: 520, color: '#eceff1', accent: '#cfd8dc' }
   ];
 
   initGame(canvasWidth: number, canvasHeight: number, players: any[], currentUserStats: User | null): GameState {
@@ -94,10 +100,12 @@ export class GameService {
       }
 
       // ─── Continent Passive Bonuses ─────────────────────────────────────
-      // Eurasia: +25% health
+      // Eurasia/Antártida: health bonus
       if (continentIdx === 1) baseHealth *= 1.25;
-      // Sudamérica: ammo bonus (gets auto-stealth handled in launchMissile)
-      // Africa: credits bonus handled in applyDamage
+      if (continentIdx === 5) baseHealth *= 1.30;
+      // Oceanía: ammo bonus
+      if (continentIdx === 4) baseAmmo += 15;
+      // Sudamérica/Africa: handled in damage/launch
 
       cities.push({
         id: (p.cityId !== undefined && p.cityId !== null) ? p.cityId : i,
@@ -187,6 +195,7 @@ export class GameService {
     const hasHyper   = city.activeSkills.includes('hyper-speed');
     const hasStealth = city.activeSkills.includes('stealth') || city.continentIndex === 2; // Sudamérica passive
     const hasNuclear = city.activeSkills.includes('double-damage');
+    const hasCluster = city.activeSkills.includes('cluster-missile');
 
     let baseSpeed = 0.0083; 
     if (hasHyper) baseSpeed = 0.03;
@@ -211,6 +220,8 @@ export class GameService {
       hitSuccess: true,
       isStealth: hasStealth,
       isNuclear: hasNuclear,
+      isCluster: hasCluster,
+      isSplit: false,
       skin: city.missileSkin || 'default'
     };
 
@@ -220,6 +231,11 @@ export class GameService {
       city.statusEffects = city.statusEffects.filter(e => e.type !== 'double-shot');
       city.activeSkills = city.statusEffects.map(e => e.type);
       this.launchMissile(state, fromCityId, targetX + 40, targetY, elapsedMs);
+    }
+
+    if (city.activeSkills.includes('cluster-missile')) {
+      city.statusEffects = city.statusEffects.filter(e => e.type !== 'cluster-missile');
+      city.activeSkills = city.statusEffects.map(e => e.type);
     }
 
     return missile;
@@ -364,6 +380,28 @@ export class GameService {
 
       missile.currentX = missile.startX + dx * t;
       missile.currentY = missile.startY + dy * t;
+      
+      // Cluster Missile Split Logic
+      if (missile.isCluster && !missile.isSplit && t >= 0.5) {
+        missile.active = false;
+        // Create 3 sub-missiles
+        for (let i = -1; i <= 1; i++) {
+          const subMissile: Missile = {
+            ...missile,
+            id: this.nextMissileId++,
+            isSplit: true,
+            isCluster: false,
+            startX: missile.currentX,
+            startY: missile.currentY,
+            targetX: missile.targetX + i * 40,
+            targetY: missile.targetY,
+            progress: 0,
+            speed: missile.speed * 1.5,
+            trail: []
+          };
+          state.missiles.push(subMissile);
+        }
+      }
 
       missile.trail.push({ x: missile.currentX, y: missile.currentY, alpha: 1 });
 
@@ -432,6 +470,13 @@ export class GameService {
     }
 
     state.activeEmojis = state.activeEmojis.filter(e => Date.now() - e.startTime < e.duration);
+
+    // Hazard: Meteor Shower (Only while missiles are flying)
+    if (state.globalEvent?.type === 'meteor-shower' && state.phase === 'defending' && Math.random() < 0.04 * dtFactor) {
+      const mx = Math.random() * this.canvasWidth;
+      const my = (Math.random() * 0.4 + 0.5) * this.canvasHeight; 
+      this.createExplosion(state, mx, my, '#ff5500', true);
+    }
 
     for (const exp of state.explosions) {
       if (!exp.active) continue;
@@ -539,7 +584,7 @@ export class GameService {
     return null;
   }
 
-  advanceTurn(state: GameState, nextIndex?: number, nextCityId?: number): void {
+  advanceTurn(state: GameState, nextIndex?: number, nextCityId?: number, weather?: any, globalEvent?: any): void {
     let next: number;
 
     if (nextCityId !== undefined && nextCityId !== null) {
@@ -565,36 +610,27 @@ export class GameService {
     state.currentPlayerIndex = next;
     state.turnNumber++;
 
-    // ─── World Events: trigger every 5 turns ───────────────────────────────
-    if (state.globalEvent) {
-      state.globalEvent.turnsActive--;
-      if (state.globalEvent.turnsActive <= 0) {
-        // Apply resource crisis end effect
-        state.globalEvent = null;
-      }
-    }
-
-    if (!state.globalEvent && state.turnNumber > 1 && state.turnNumber % 5 === 0) {
-      const ev = this.worldEvents[Math.floor(Math.random() * this.worldEvents.length)];
-      state.globalEvent = { ...ev };
+    // ─── Synchronized World Events (from server) ──────────────────────────
+    if (globalEvent) {
+      state.globalEvent = { ...globalEvent };
       // Immediate effects
-      if (ev.type === 'resource-crisis') {
+      if (globalEvent.type === 'resource-crisis') {
         state.cities.forEach(c => { if (c.isAlive) c.ammo = Math.max(0, c.ammo - 5); });
       }
+    } else if (globalEvent === null) {
+      state.globalEvent = null;
     }
 
+    // Status effects cooldown
     for (const city of state.cities) {
       city.statusEffects.forEach(effect => effect.turns--);
       city.statusEffects = city.statusEffects.filter(e => e.turns > 0);
       city.activeSkills = city.statusEffects.map(e => e.type);
     }
 
-    // Weather change every 3 turns
-    if (state.turnNumber % 3 === 0) {
-        state.weather = { ...this.weatherPool[Math.floor(Math.random() * this.weatherPool.length)] };
-        // Randomize wind slightly for windy/storm
-        if (state.weather.type === 'windy') state.weather.windX = (Math.random() - 0.5) * 1.5;
-        if (state.weather.type === 'storm')  state.weather.windY = (Math.random()) * 0.8;
+    // ─── Synchronized Weather (from server) ────────────────────────────────
+    if (weather) {
+        state.weather = { ...weather };
     }
 
     state.phase = 'aiming';
@@ -602,11 +638,16 @@ export class GameService {
 
   applySkill(state: GameState, cityId: number, skillIndex: number): void {
     const city = state.cities.find(c => c.id === cityId);
-    if (!city || !city.isAlive) return;
+    if (!city) return;
 
     switch (skillIndex) {
-      case 0: city.statusEffects.push({ type: 'auto-defense', turns: 3 }); break;
-      case 1: city.health = Math.min(city.maxHealth, city.health + 20); city.ammo += 10; break;
+      case 0: // Skill 0 (Extra Life / Suministros)
+        city.health = Math.min(city.maxHealth, city.health + 250);
+        city.ammo += 15;
+        if (city.health > 0) city.isAlive = true;
+        this.repairCityBuildings(city, 4);
+        break;
+      case 1: city.statusEffects.push({ type: 'auto-defense', turns: 3 }); break;
       case 2: city.statusEffects.push({ type: 'double-damage', turns: 2 }); break;
       case 3: city.statusEffects.push({ type: 'stealth', turns: 2 }); break;
       case 4: state.cities.forEach(c => { if (c.id !== cityId) c.statusEffects.push({ type: 'no-defense', turns: 2 }); }); break;
@@ -614,15 +655,20 @@ export class GameService {
       case 6: city.statusEffects.push({ type: 'hyper-speed', turns: 2 }); break;
       case 7: city.statusEffects.push({ type: 'double-shot', turns: 2 }); break;
       case 8: // Repair
-        const destroyed = city.buildings.filter(b => b.destroyed);
-        for (let i = 0; i < Math.min(destroyed.length, 3); i++) {
-          destroyed[i].destroyed = false;
-          city.health += destroyed[i].healthValue || 25;
-        }
-        city.health = Math.min(city.health, city.maxHealth);
+        this.repairCityBuildings(city, 8);
         break;
+      case 9: city.statusEffects.push({ type: 'cluster-missile', turns: 1 }); break;
     }
     city.activeSkills = city.statusEffects.map(e => e.type);
+  }
+
+  private repairCityBuildings(city: City, amount: number): void {
+    const destroyed = city.buildings.filter(b => b.destroyed);
+    for (let i = 0; i < Math.min(destroyed.length, amount); i++) {
+        destroyed[i].destroyed = false;
+        city.health += destroyed[i].healthValue || 25;
+    }
+    city.health = Math.min(city.health, city.maxHealth);
   }
 
   getTargetableCities(state: GameState): City[] {

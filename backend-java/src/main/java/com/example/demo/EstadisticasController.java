@@ -109,4 +109,25 @@ public class EstadisticasController {
 
         return ResponseEntity.ok(stats);
     }
+
+    @PostMapping("/seed")
+    public ResponseEntity<?> seedDatabase() {
+        String[] winners = {"Hugo", "Ian", "Mario", "Elena", "Bot-X", "Alpha-Zero"};
+        java.util.Random rnd = new java.util.Random();
+        
+        for (int i = 0; i < 20; i++) {
+            Partida p = new Partida();
+            p.estado = "FINALIZADA";
+            p.ganador = winners[rnd.nextInt(winners.length)];
+            p.continentGanador = rnd.nextInt(4);
+            p.numeroRonda = 5 + rnd.nextInt(20);
+            p.infoParticipantes = "[]"; 
+            partidaSqlRepository.save(p);
+        }
+        
+        // Auto-sync to Mongo after seeding SQL
+        copiarPartidas();
+        
+        return ResponseEntity.ok("Base de Datos poblada con 20 partidas aleatorias.");
+    }
 }

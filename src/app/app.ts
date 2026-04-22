@@ -83,7 +83,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     'Sabotaje de Munición',
     'Misil Hipersónico',
     'Golpe Espejo (¡Doble!)',
-    'Brigada de Reparación'
+    'Brigada de Reparación',
+    'Lluvia de Fuego (Racimo)'
   ];
 
   public readonly skillDescriptions = [
@@ -95,7 +96,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     'Roba misiles de las reservas enemigas y añádelos a la tuya.',
     'Tu misil viajará a extrema velocidad para reducir la reacción enemiga.',
     'Lanzarás automáticamente dos misiles simultáneos en tu próximo ataque.',
-    'Repara hasta 3 edificios destruidos y restaura salud a tu ciudad.'
+    'Repara hasta 3 edificios destruidos y restaura salud a tu ciudad.',
+    'Tu próximo misil se dividirá en tres en pleno vuelo para saturar las defensas.'
   ];
   
   private mouseX = 0;
@@ -210,7 +212,12 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     this.wsService.gameStarted$.subscribe(data => {
       this.gamePhase.set('aiming');
       this.turnTimer.set(30);
-      setTimeout(() => this.initCanvas(data.players), 50);
+      setTimeout(() => {
+        this.initCanvas(data.players);
+        if (data.weather && this.state) {
+          this.state.weather = { ...data.weather };
+        }
+      }, 50);
     });
 
     this.wsService.playerBecameBot$.subscribe(data => {
@@ -275,7 +282,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.wsService.turnAdvanced$.subscribe(data => {
-      this.gameService.advanceTurn(this.state, data.nextPlayerIndex, data.nextCityId);
+      this.gameService.advanceTurn(this.state, data.nextPlayerIndex, data.nextCityId, data.weather, data.globalEvent);
       this.turnTimer.set(30);
 
       // World Event toast
@@ -602,7 +609,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
     let spinCount = 0;
     const interval = setInterval(() => {
-      this.rouletteDisplaySkill.set(this.skillNames[spinCount % 8]);
+      this.rouletteDisplaySkill.set(this.skillNames[spinCount % this.skillNames.length]);
       spinCount++;
       if (spinCount > 20) {
         clearInterval(interval);
@@ -625,8 +632,14 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    let x = (event.clientX - rect.left) * scaleX;
+    let y = (event.clientY - rect.top) * scaleY;
+    
+    // Radio Jamming: Jittery cursor
+    if (this.state?.globalEvent?.type === 'radio-jamming' && this.isMyTurn()) {
+      x += (Math.random() - 0.5) * 40;
+      y += (Math.random() - 0.5) * 40;
+    }
     
     this.mouseX = x;
     this.mouseY = y;

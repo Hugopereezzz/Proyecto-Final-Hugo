@@ -83,7 +83,8 @@ export class LobbyComponent implements OnInit {
   async createRoom() {
     const name = this.authService.displayName() || 'Agente';
     const avatar = this.authService.currentUserStats()?.avatarBase64;
-    const res = await this.wsService.createRoom(name, avatar, this.isCreatePublic());
+    const skin = this.authService.currentUserStats()?.missileSkin || 'default';
+    const res = await this.wsService.createRoom(name, avatar, skin, this.isCreatePublic());
     if (res.success && res.roomId) {
       this.roomCreated.emit({ roomId: res.roomId, cityId: res.cityId });
     }
@@ -92,7 +93,8 @@ export class LobbyComponent implements OnInit {
   async joinRoom() {
     const name = this.authService.displayName() || 'Agente';
     const avatar = this.authService.currentUserStats()?.avatarBase64;
-    const res = await this.wsService.joinRoom(this.joinRoomId(), name, avatar);
+    const skin = this.authService.currentUserStats()?.missileSkin || 'default';
+    const res = await this.wsService.joinRoom(this.joinRoomId(), name, avatar, skin);
     if (res.success && res.roomId) {
       this.roomJoined.emit({ roomId: res.roomId, cityId: res.cityId });
     } else {
@@ -130,7 +132,8 @@ export class LobbyComponent implements OnInit {
   async joinPublicRoom(roomId: string) {
     const name = this.authService.displayName() || 'Agente';
     const avatar = this.authService.currentUserStats()?.avatarBase64;
-    const res = await this.wsService.joinRoom(roomId, name, avatar);
+    const skin = this.authService.currentUserStats()?.missileSkin || 'default';
+    const res = await this.wsService.joinRoom(roomId, name, avatar, skin);
     if (res.success && res.roomId) {
       this.roomJoined.emit({ roomId: res.roomId, cityId: res.cityId });
     } else {

@@ -1,0 +1,63 @@
+========================================================================
+             GUÍA TÉCNICA DE COMUNICACIÓN (WEBSOCKETS)
+========================================================================
+
+Este documento detalla el protocolo de comunicación en tiempo real 
+desarrollado para garantizar la sincronización del juego multijugador.
+
+1. INFRAESTRUCTURA Y RESILIENCIA
+------------------------------------------------------------------------
+El sistema utiliza WebSockets (ws://localhost:8080/game) con un wrapper 
+avanzado en Angular que implementa:
+- Reconexión Automática: Si el servidor falla, el cliente intenta 
+  reconectar con un retraso incremental (1s, 2s, 4s...) para no saturar.
+- Message Queue: Si el usuario pierde internet un segundo, los mensajes 
+  (como un misil lanzado) se encolan y se envían al recuperar la conexión.
+- Heartbeat (Ping/Pong): Cada 30 segundos, el cliente envía un "ping" 
+  y el servidor responde "pong" para mantener el túnel abierto ante proxies.
+
+2. PROTOCOLO DE MENSAJES (JSON)
+------------------------------------------------------------------------
+Todos los mensajes siguen la estructura: { "type": "TIPO", "data": { ... } }
+
+A) MENSAJES DE CONTROL DE SALA
+   - "join": Enviado por el cliente al entrar a una sala.
+     * Cuándo: Al pulsar "Jugar" o "Entrar".
+     * Por qué: Para que el servidor registre al jugador en una "Room".
+   - "room-update": Enviado por el servidor.
+     * Cuándo: Cada vez que alguien entra o sale.
+     * Por qué: Para actualizar la lista de jugadores en el HUD del cliente.
+
+B) MENSAJES DE JUEGO (GAMEPLAY)
+   - "move-missile": Enviado por el cliente/servidor.
+     * Cuándo: Cada frame del movimiento del proyectil.
+     * Por qué: Sincroniza la posición (x, y) exacta del misil para todos.
+   - "launch-missile": Enviado por el cliente atacante.
+     * Cuándo: Al hacer clic en el objetivo.
+     * Por qué: Notifica la creación de un nuevo misil y su trayectoria.
+   - "missile-hit": Enviado por el cliente que detecta la colisión.
+     * Cuándo: Cuando un misil toca una ciudad o defensa.
+     * Por qué: Para restar vida al objetivo y mostrar la explosión.
+
+C) MENSAJES DE ESTADO FINAL
+   - "victory-report": Enviado por el cliente vencedor.
+     * Cuándo: Cuando solo queda un superviviente.
+     * Por qué: Activa en Java el proceso de:
+        1. Actualizar victorias y créditos en MySQL.
+        2. Guardar la partida en el historial.
+        3. Marcar el evento en MongoDB.
+
+3. RESUMEN DEL FLUJO DE DATOS
+------------------------------------------------------------------------
+1. Cliente envía 'join'.
+2. Servidor confirma y envía 'room-update'.
+3. Jugador A lanza misil -> envía 'launch-missile'.
+4. Servidor reenvía 'launch-missile' a todos los demás en la sala.
+5. Misil impacta en B -> Cliente B envía 'missile-hit'.
+6. B pierde todas las ciudades -> B envía 'game-over'.
+7. A queda solo -> Servidor declara a A ganador y guarda en BD.
+
+========================================================================
+Este sistema garantiza que todos los jugadores vean exactamente lo mismo 
+con una latencia mínima e incorpora tolerancia a fallos de red.
+========================================================================

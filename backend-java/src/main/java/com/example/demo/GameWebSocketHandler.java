@@ -66,6 +66,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         public String hostName = "";
         public int currentPlayerIndex = 0;
         public int currentPlayerId = 0;
+        public Map<String, Object> weather = new HashMap<>();
+        public Map<String, Object> globalEvent = null;
     }
 
     @Override
@@ -150,6 +152,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 break;
             case "send-emoji":
                 handleSendEmoji(session, data);
+                break;
+            case "ping":
+                send(session, "pong", Map.of("timestamp", System.currentTimeMillis()));
                 break;
         }
     }
@@ -398,7 +403,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             if (!room.players.isEmpty()) {
                 room.currentPlayerId = room.players.get(0).cityId;
             }
-            broadcast(room, "game-started", Map.of("players", room.players));
+            
+            // Initial weather
+            room.weather.put("type", "clear");
+            room.weather.put("title", "☀️ DESPEJADO");
+            room.weather.put("icon", "☀️");
+            room.weather.put("windX", 0.0);
+            room.weather.put("windY", 0.0);
+
+            broadcast(room, "game-started", Map.of("players", room.players, "weather", room.weather));
             if (room.isPublic) {
                 broadcastPublicRooms();
             }
@@ -462,7 +475,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 for (Player p : room.players) {
                     Map<String, Object> assignment = new HashMap<>();
                     assignment.put("playerName", p.name);
-                    assignment.put("skillIndex", random.nextInt(8));
+                    assignment.put("skillIndex", random.nextInt(10));
                     assignments.add(assignment);
                 }
 
@@ -472,6 +485,60 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 broadcast(room, "skill-roulette", rouletteData);
             }
+
+            // --- Server-side Synchronized Weather ---
+            if (room.turnCount % 4 == 0) {
+                String[] types = {"clear", "windy", "storm", "fog"};
+                String type = types[random.nextInt(types.length)];
+                room.weather.put("type", type);
+                double windX = 0;
+                double windY = 0;
+                if ("windy".equals(type)) {
+                    windX = (random.nextDouble() - 0.5) * 1.5;
+                    room.weather.put("title", "🍃 VIENTO FUERTE");
+                    room.weather.put("icon", "🍃");
+                } else if ("storm".equals(type)) {
+                    windY = random.nextDouble() * 0.8;
+                    room.weather.put("title", "⛈️ TORMENTA");
+                    room.weather.put("icon", "⛈️");
+                } else if ("fog".equals(type)) {
+                    room.weather.put("title", "🌫️ NIEBLA");
+                    room.weather.put("icon", "🌫️");
+                } else {
+                    room.weather.put("title", "☀️ DESPEJADO");
+                    room.weather.put("icon", "☀️");
+                }
+                room.weather.put("windX", windX);
+                room.weather.put("windY", windY);
+            }
+
+            // --- Server-side Synchronized Events ---
+            if (room.turnCount % 6 == 0 && room.globalEvent == null) {
+                String[] eventTypes = {"solar-storm", "arms-treaty", "spy-satellite", "resource-crisis", "radio-jamming", "meteor-shower"};
+                String type = eventTypes[random.nextInt(eventTypes.length)];
+                Map<String, Object> ev = new HashMap<>();
+                ev.put("type", type);
+                ev.put("turnsActive", 1);
+                
+                // Set titles/icons
+                if ("solar-storm".equals(type)) { ev.put("title", "☀️ TORMENTA SOLAR"); ev.put("icon", "☀️"); ev.put("turnsActive", 2); }
+                else if ("arms-treaty".equals(type)) { ev.put("title", "🕊️ TRATADO DE NO PROLIFERACIÓN"); ev.put("icon", "🕊️"); }
+                else if ("radio-jamming".equals(type)) { ev.put("title", "📡 INTERFERENCIA DE RADIO"); ev.put("icon", "📡"); }
+                else if ("meteor-shower".equals(type)) { ev.put("title", "☄️ LLUVIA DE METEORITOS"); ev.put("icon", "☄️"); }
+
+                room.globalEvent = ev;
+            } else if (room.globalEvent != null) {
+                int turns = (int) room.globalEvent.get("turnsActive");
+                turns--;
+                if (turns <= 0) room.globalEvent = null;
+                else room.globalEvent.put("turnsActive", turns);
+            }
+
+            Map<String, Object> turnData = new HashMap<>(data);
+            turnData.put("weather", room.weather);
+            turnData.put("globalEvent", room.globalEvent);
+            
+            broadcast(room, "turn-advanced", turnData);
         }
     }
 

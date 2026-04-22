@@ -287,6 +287,14 @@
                   <path d="M25,15 L50,10 L75,20 L80,45 L65,70 L50,85 L35,65 L20,45 L20,25 Z" fill="currentColor"
                     opacity="0.3" stroke="currentColor" stroke-width="1.5" />
                   }
+                  @if (loc.name === 'Oceanía') {
+                  <path d="M40,40 L60,35 L80,50 L75,70 L50,80 L35,60 Z M20,20 L30,25 L25,35 Z" fill="currentColor"
+                    opacity="0.3" stroke="currentColor" stroke-width="1.5" />
+                  }
+                  @if (loc.name === 'Antártida') {
+                  <path d="M10,80 L30,75 L50,70 L70,75 L90,80 L80,95 L50,98 L20,95 Z" fill="currentColor"
+                    opacity="0.3" stroke="currentColor" stroke-width="1.5" />
+                  }
                 </svg>
               </div>
               <span class="continent-name">{{ loc.name }}</span>

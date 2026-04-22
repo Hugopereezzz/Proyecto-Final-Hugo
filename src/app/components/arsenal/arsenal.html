@@ -83,4 +83,41 @@
     </div>
 
   </div>
+
+  <!-- SECCIÓN DE SKINS -->
+  <div class="skins-header">
+    <h2 class="skins-title">🚀 PERSONALIZACIÓN DE MISILES</h2>
+    <p class="skins-subtitle">Equipa efectos visuales únicos para tus ataques</p>
+  </div>
+
+  <div class="skins-grid">
+    @for (skin of availableSkins; track skin.id) {
+      <div class="skin-card" [class.selected]="isSelectedSkin(skin.id)" [style.border-bottom-color]="skin.color">
+        <div class="skin-preview">
+            @if (skin.id !== 'default') {
+              <img [src]="'/skins/' + skin.id + '.png'" class="skin-img" />
+            } @else {
+              <div class="missile-icon" [style.background-color]="skin.color"></div>
+            }
+            <div class="skin-glow" [style.background]="'radial-gradient(circle, ' + skin.color + '44 0%, transparent 70%)'"></div>
+        </div>
+        <div class="skin-info">
+          <div class="skin-name">{{ skin.name }}</div>
+          <div class="skin-desc">{{ skin.desc }}</div>
+        </div>
+
+        <div class="skin-actions">
+          @if (isSkinOwned(skin.id)) {
+            <button class="btn-skin select-btn" [class.active]="isSelectedSkin(skin.id)" (click)="selectSkin(skin.id)">
+              {{ isSelectedSkin(skin.id) ? 'EQUIPADO' : 'EQUIPAR' }}
+            </button>
+          } @else {
+            <button class="btn-skin buy-btn" (click)="buySkin(skin.id)">
+              COMPRAR ({{ skin.price }} CC)
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
 </div>

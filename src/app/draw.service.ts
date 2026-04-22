@@ -5,15 +5,34 @@ import { GameState, City, Missile } from './models/game.models';
   providedIn: 'root'
 })
 export class DrawService {
-  private missileImg: HTMLImageElement;
+  private missileImg: HTMLCanvasElement | null = null;
+  private skinImages: Map<string, HTMLImageElement> = new Map();
   private spriteCache: Map<string, HTMLCanvasElement> = new Map();
 
   constructor() {
-    this.missileImg = new Image();
-    this.missileImg.crossOrigin = 'anonymous';
-    this.missileImg.onload = () => console.log('✅ Missile sprite loaded successfully');
-    this.missileImg.onerror = () => console.error('❌ Failed to load missile sprite from /missile.png');
-    this.missileImg.src = '/missile.png';
+    const baseImg = new Image();
+    baseImg.crossOrigin = 'anonymous';
+    baseImg.src = '/missile.png';
+    baseImg.onload = () => {
+      this.missileImg = this.createCanvasFromImage(baseImg);
+    };
+
+    // Load available skins
+    ['fire', 'neon', 'toxic', 'ghost'].forEach(s => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = `/skins/${s}.png`;
+      img.onload = () => this.skinImages.set(s, img);
+    });
+  }
+
+  private createCanvasFromImage(img: HTMLImageElement): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    return canvas;
   }
 
   private getTintedSprite(color: string): HTMLCanvasElement {
@@ -23,7 +42,12 @@ export class DrawService {
     canvas.width = 60; canvas.height = 30;
     const ctx = canvas.getContext('2d')!;
     
-    ctx.drawImage(this.missileImg, 0, 0, 60, 30);
+    if (this.missileImg) {
+       ctx.drawImage(this.missileImg, 0, 0, 60, 30);
+    } else {
+       ctx.fillStyle = '#fff';
+       ctx.fillRect(5, 10, 50, 10);
+    }
     ctx.globalCompositeOperation = 'source-atop';
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, 60, 30);
@@ -46,8 +70,10 @@ export class DrawService {
     const height = ctx.canvas.height;
 
     // 1. Background
-    ctx.fillStyle = '#0a0a14';
-    ctx.fillRect(0, 0, width, height);
+    // 1. Background Atmosphere
+    this.drawBackground(ctx, state, width, height);
+    this.drawCitySilhouettes(ctx, width, height);
+    this.drawQuadrantGrid(ctx, width, height);
 
     // Global Event Tint
     if (state.globalEvent?.type === 'solar-storm') {
@@ -56,6 +82,14 @@ export class DrawService {
        grad.addColorStop(1, 'transparent');
        ctx.fillStyle = grad;
        ctx.fillRect(0, 0, width, height);
+    }
+
+    // Radio Jamming Static Effect
+    if (state.globalEvent?.type === 'radio-jamming') {
+       ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+       for(let i=0; i<10; i++) {
+         ctx.fillRect(Math.random()*width, Math.random()*height, Math.random()*100, 1);
+       }
     }
 
     // 2. Shake & Stars
@@ -160,10 +194,15 @@ export class DrawService {
         if (b.destroyed) {
           ctx.fillStyle = 'rgba(60, 60, 60, 0.8)';
           ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
-          // Smoke particles
-          if (Math.random() > 0.8) {
+          // Smoke & Fire particles
+          if (Math.random() > 0.85) {
              ctx.fillStyle = `rgba(100, 100, 100, ${Math.random() * 0.4})`;
              ctx.beginPath(); ctx.arc(b.x, b.y - Math.random() * 20, 2 + Math.random() * 4, 0, Math.PI * 2); ctx.fill();
+          }
+          if (city.health < city.maxHealth * 0.5 && Math.random() > 0.9) {
+             ctx.fillStyle = Math.random() > 0.5 ? '#ff4d00' : '#ffc400';
+             ctx.beginPath(); ctx.arc(b.x + (Math.random()-0.5)*10, b.y + (Math.random()-0.5)*10, 2 + Math.random()*3, 0, Math.PI * 2); ctx.fill();
+             ctx.shadowBlur = 10; ctx.shadowColor = '#ff4d00'; ctx.fill(); ctx.shadowBlur = 0;
           }
         } else {
           ctx.fillStyle = b.color;
@@ -233,17 +272,24 @@ export class DrawService {
       if (m.isNuclear) {
         glowColor = '#ff0000';
       }
+      
+      if (m.isCluster && !m.isSplit) {
+        glowColor = Math.sin(Date.now() * 0.02) > 0 ? '#ffff00' : m.color;
+      }
 
-      // Trail
+      // Trail: Always draw current trail (for fading effect)
       for (const tp of m.trail) {
         ctx.beginPath();
         ctx.arc(tp.x, tp.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = trailColor.replace('0.4', (tp.alpha * 0.4).toString()).replace('0.5', (tp.alpha * 0.5).toString());
+        const alphaStr = (tp.alpha * 0.4).toFixed(3);
+        ctx.fillStyle = trailColor.replace(/0\.[0-9]+/, alphaStr);
         ctx.fill();
       }
 
+      if (!m.active) continue;
+
       // Head
-      if (this.missileImg && this.missileImg.complete) {
+      if (this.missileImg) {
         ctx.save();
         ctx.translate(m.currentX, m.currentY);
         
@@ -258,9 +304,14 @@ export class DrawService {
         ctx.shadowColor = glowColor;
 
         // Tint effect for skins
-        const finalColor = missileColor;
-        const sprite = this.getTintedSprite(finalColor);
-        ctx.drawImage(sprite, -15, -7.5, 30, 15);
+        const skinImg = m.skin ? this.skinImages.get(m.skin) : null;
+        if (skinImg && skinImg.complete) {
+           ctx.drawImage(skinImg, -15, -7.5, 30, 15);
+        } else {
+           const finalColor = missileColor;
+           const sprite = this.getTintedSprite(finalColor);
+           ctx.drawImage(sprite, -15, -7.5, 30, 15);
+        }
         
         ctx.restore();
       } else {
@@ -410,5 +461,98 @@ export class DrawService {
       }
     }
     ctx.globalAlpha = 1.0;
+  }
+
+  private drawCitySilhouettes(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.save();
+    const groundY = height - 60;
+    
+    // Draw three layers of silhouettes with Parallax-like depth
+    const layers = [
+      { color: '#050510', scale: 1.0, count: 12, hMin: 100, hMax: 250 },
+      { color: '#08081a', scale: 0.7, count: 8, hMin: 150, hMax: 350 },
+      { color: '#030308', scale: 1.2, count: 15, hMin: 50, hMax: 150 }
+    ];
+
+    layers.forEach(l => {
+      ctx.fillStyle = l.color;
+      const bWidth = width / l.count;
+      for (let i = 0; i < l.count; i++) {
+        const h = l.hMin + (Math.sin(i * 1.5) * 0.5 + 0.5) * (l.hMax - l.hMin);
+        const x = i * bWidth;
+        ctx.fillRect(x, groundY - h, bWidth + 2, h);
+        
+        // Add some glowing windows
+        if (i % 2 === 0) {
+          ctx.fillStyle = 'rgba(0, 229, 255, 0.1)';
+          for (let row = 1; row < 10; row++) {
+             if (Math.sin(i + row) > 0.5) {
+                ctx.fillRect(x + bWidth/4, groundY - h + row * 20, bWidth/2, 10);
+             }
+          }
+          ctx.fillStyle = l.color;
+        }
+      }
+    });
+    ctx.restore();
+  }
+
+  private drawQuadrantGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+    ctx.lineWidth = 1;
+
+    // Cross lines (Quadrant Division)
+    ctx.beginPath();
+    ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height);
+    ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2);
+    ctx.stroke();
+
+    // Quadrant Labels
+    ctx.font = '900 10px "Orbitron", sans-serif';
+    ctx.fillStyle = 'rgba(0, 229, 255, 0.3)';
+    ctx.textAlign = 'center';
+    
+    const padding = 25;
+    ctx.fillText('SQ-ALPHA [NW]', width * 0.25, padding);
+    ctx.fillText('SQ-BRAVO [NE]', width * 0.75, padding);
+    ctx.fillText('SQ-CHARLIE [SW]', width * 0.25, height - 10);
+    ctx.fillText('SQ-DELTA [SE]', width * 0.75, height - 10);
+
+    // Lateral rulers
+    ctx.beginPath();
+    for (let i = 0; i < height; i += 100) {
+      ctx.moveTo(0, i); ctx.lineTo(10, i);
+      ctx.moveTo(width, i); ctx.lineTo(width - 10, i);
+    }
+    for (let i = 0; i < width; i += 100) {
+       ctx.moveTo(i, 0); ctx.lineTo(i, 10);
+       ctx.moveTo(i, height); ctx.lineTo(i, height - 10);
+    }
+    ctx.stroke();
+
+    // Scanning horizontal line
+    const scanY = (Date.now() % 4000) / 4000 * height;
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.04)';
+    ctx.beginPath();
+    ctx.moveTo(0, scanY); ctx.lineTo(width, scanY);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  private drawBackground(ctx: CanvasRenderingContext2D, state: GameState, width: number, height: number) {
+    const grd = ctx.createLinearGradient(0, 0, 0, height);
+    grd.addColorStop(0, '#0a0a1a');
+    grd.addColorStop(1, '#1a1a3a');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Add some subtle atmosphere glow
+    const radial = ctx.createRadialGradient(width/2, height, 0, width/2, height, height);
+    radial.addColorStop(0, 'rgba(0, 100, 255, 0.1)');
+    radial.addColorStop(1, 'transparent');
+    ctx.fillStyle = radial;
+    ctx.fillRect(0, 0, width, height);
   }
 }

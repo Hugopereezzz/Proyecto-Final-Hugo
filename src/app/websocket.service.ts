@@ -13,7 +13,16 @@ export interface RoomPlayer {
 @Injectable({ providedIn: 'root' })
 export class WebsocketService {
   private socket!: WebSocket;
+  private reconnectAttempts = 0;
+  private maxReconnectDelay = 10000;
+  private heartbeatInterval?: any;
+  private messageQueue: any[] = [];
   
+  public connectionStatus = signal<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  public publicRooms = signal<any[]>([]);
+  public globalChat = signal<any[]>([]);
+
+  // Subjects for game events
   roomUpdate$ = new Subject<RoomPlayer[]>();
   gameStarted$ = new Subject<any>();
   missileLaunched$ = new Subject<any>();
@@ -28,81 +37,130 @@ export class WebsocketService {
   private createRoomResolve?: (res: any) => void;
   private joinRoomResolve?: (res: any) => void;
 
-  publicRooms = signal<any[]>([]);
-  globalChat = signal<any[]>([]);
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.close();
-    }
-  }
-
   connect() {
+    if (this.connectionStatus() === 'connecting') return;
+    
+    console.log('[WS] Connecting...');
+    this.connectionStatus.set('connecting');
     this.socket = new WebSocket('ws://localhost:8080/game');
 
-    this.socket.onclose = () => {
-      setTimeout(() => this.connect(), 2000); // Auto reconnect if backend restarts
+    this.socket.onopen = () => {
+      console.log('[WS] Connected successfully');
+      this.connectionStatus.set('connected');
+      this.reconnectAttempts = 0;
+      this.startHeartbeat();
+      this.flushQueue();
+    };
+
+    this.socket.onclose = (event) => {
+      this.connectionStatus.set('disconnected');
+      this.stopHeartbeat();
+      console.warn(`[WS] Connection closed (code: ${event.code}). Reconnecting...`);
+      
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), this.maxReconnectDelay);
+      this.reconnectAttempts++;
+      
+      setTimeout(() => this.connect(), delay);
+    };
+
+    this.socket.onerror = (error) => {
+      console.error('[WS] Error detected:', error);
     };
 
     this.socket.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-      if (!payload.type) return;
-
-      switch (payload.type) {
-        case 'public-rooms-update':
-          this.publicRooms.set(payload.data);
-          break;
-        case 'global-chat-message':
-          this.globalChat.update(chat => {
-            const newChat = [...chat, payload.data];
-            return newChat.length > 50 ? newChat.slice(-50) : newChat;
-          });
-          break;
-        case 'room-created':
-          if (this.createRoomResolve) {
-            this.createRoomResolve(payload.data);
-            this.createRoomResolve = undefined;
-          }
-          break;
-        case 'room-joined':
-        case 'join-error':
-          if (this.joinRoomResolve) {
-            this.joinRoomResolve(payload.data);
-            this.joinRoomResolve = undefined;
-          }
-          break;
-        case 'room-update':
-          this.roomUpdate$.next(payload.data);
-          break;
-        case 'game-started':
-          this.gameStarted$.next(payload.data);
-          break;
-        case 'missile-launched':
-          this.missileLaunched$.next(payload.data);
-          break;
-        case 'defense-launched':
-          this.defenseLaunched$.next(payload.data);
-          break;
-        case 'turn-advanced':
-          this.turnAdvanced$.next(payload.data);
-          break;
-        case 'skill-roulette':
-          this.skillRoulette$.next(payload.data);
-          break;
-        case 'game-over':
-          this.gameOver$.next(payload.data);
-          break;
-        case 'player-became-bot':
-          this.playerBecameBot$.next(payload.data);
-          break;
-        case 'world-event':
-          this.worldEvent$.next(payload.data);
-          break;
-        case 'emoji-received':
-          this.emojiReceived$.next(payload.data);
-          break;
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.type === 'pong') return; // Ignore heartbeat responses
+        this.handleMessage(payload);
+      } catch (e) {
+        console.error('[WS] Failed to parse message:', event.data);
       }
     };
+  }
+
+  private handleMessage(payload: any) {
+    if (!payload.type) return;
+
+    switch (payload.type) {
+      case 'public-rooms-update':
+        this.publicRooms.set(payload.data);
+        break;
+      case 'global-chat-message':
+        this.globalChat.update(chat => {
+          const newChat = [...chat, payload.data];
+          return newChat.length > 50 ? newChat.slice(-50) : newChat;
+        });
+        break;
+      case 'room-created':
+        this.createRoomResolve?.(payload.data);
+        this.createRoomResolve = undefined;
+        break;
+      case 'room-joined':
+      case 'join-error':
+        this.joinRoomResolve?.(payload.data);
+        this.joinRoomResolve = undefined;
+        break;
+      case 'room-update':
+        this.roomUpdate$.next(payload.data);
+        break;
+      case 'game-started':
+        this.gameStarted$.next(payload.data);
+        break;
+      case 'missile-launched':
+        this.missileLaunched$.next(payload.data);
+        break;
+      case 'defense-launched':
+        this.defenseLaunched$.next(payload.data);
+        break;
+      case 'turn-advanced':
+        this.turnAdvanced$.next(payload.data);
+        break;
+      case 'skill-roulette':
+        this.skillRoulette$.next(payload.data);
+        break;
+      case 'game-over':
+        this.gameOver$.next(payload.data);
+        break;
+      case 'player-became-bot':
+        this.playerBecameBot$.next(payload.data);
+        break;
+      case 'world-event':
+        this.worldEvent$.next(payload.data);
+        break;
+      case 'emoji-received':
+        this.emojiReceived$.next(payload.data);
+        break;
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      this.send('ping', {});
+    }, 30000); // 30 seconds
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = undefined;
+    }
+  }
+
+  private flushQueue() {
+    while (this.messageQueue.length > 0 && this.socket.readyState === WebSocket.OPEN) {
+      const msg = this.messageQueue.shift();
+      this.socket.send(JSON.stringify(msg));
+    }
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.onclose = null; // Prevent auto-reconnect
+      this.socket.close();
+      this.connectionStatus.set('disconnected');
+      this.stopHeartbeat();
+    }
   }
 
   requestPublicRooms() {
@@ -159,15 +217,18 @@ export class WebsocketService {
     this.send('send-emoji', { roomId, cityId, emoji });
   }
 
-  private send(type: string, data: any) {
+  public send(type: string, data: any) {
+    const message = { type, data };
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ type, data }));
+      this.socket.send(JSON.stringify(message));
     } else {
-      setTimeout(() => this.send(type, data), 100);
+      console.log(`[WS] Offline. Queuing message: ${type}`);
+      this.messageQueue.push(message);
+      if (this.messageQueue.length > 50) this.messageQueue.shift(); // Limit queue size
     }
   }
 
   getLatency(): number {
-    return 0; // Simple placeholder for sync logic
+    return 0; // Simple placeholder
   }
 }
