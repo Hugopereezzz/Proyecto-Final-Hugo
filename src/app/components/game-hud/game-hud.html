@@ -71,17 +71,20 @@
       <div class="city-card" [class.dead]="!city.isAlive" [style.--city-color]="city.color">
         <div class="city-top-line"></div>
         <div class="city-name-row">
-          <span class="city-name">{{ city.name }}</span>
+          <span class="city-name" [style.color]="city.isAlive ? city.color : '#666'">
+             {{ getFactionName(city.factionId) }}
+          </span>
+          <span class="player-tag">({{ city.name }})</span>
           @if (city.isBot) { <span class="bot-tag">BOT</span> }
         </div>
         <div class="health-track">
           <div class="health-fill"
-            [style.width.%]="city.health"
-            [class.critical]="city.health <= 30">
+            [style.width.%]="(city.health / city.maxHealth) * 100"
+            [class.critical]="(city.health / city.maxHealth) * 100 <= 30">
           </div>
         </div>
         <div class="city-stats">
-          <span class="city-hp">{{ city.health }}%</span>
+          <span class="city-hp">{{ Math.ceil((city.health / city.maxHealth) * 100) }}%</span>
           <span class="city-ammo">🧨 {{ city.ammo }}</span>
         </div>
         @if (city.activeSkills.length > 0) {

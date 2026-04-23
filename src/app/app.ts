@@ -125,7 +125,12 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   allPlayersReady = computed(() => {
     const players = this.roomPlayers();
-    return players.length >= 2 && players.every(p => p.continentIndex >= 0);
+    return players.length >= 2 && players.every(p => p.factionId !== undefined && p.factionId !== null);
+  });
+
+  myFactionId = computed(() => {
+    const me = this.roomPlayers().find(p => p.cityId === this.myCityId());
+    return me ? me.factionId : -1;
   });
 
   winBonus = computed(() => {
@@ -197,6 +202,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
     this.wsService.roomUpdate$.subscribe(players => {
       this.roomPlayers.set(players);
+      if (this.gamePhase() !== 'setup' && this.gamePhase() !== 'auth') {
+        this.checkAutoWinVsBots();
+      }
     });
 
     this.wsService.gameStarted$.subscribe(data => {
@@ -404,7 +412,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     this.resizeCanvas();
     this.loadGeoJson();
 
-    this.state = this.gameService.initGame(canvas.width, canvas.height, players, this.authService.currentUserStats());
+    this.state = this.gameService.initGame(canvas.width, canvas.height, players, this.authService.currentUserStats(), this.currentRoomId());
     this.syncSignals();
     this.lastFrameTime = performance.now();
     this.gameLoop();
@@ -582,6 +590,18 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     const currentCity = this.state.cities.find(c => c.id === this.myCityId());
     if (!currentCity || currentCity.ammo <= 0) return;
 
+    // Faction: Alianza Cobalto (7) - Can't attack unprovoked
+    const aliveEnemies = this.state.cities.filter(c => c.isAlive && c.id !== currentCity.id);
+    if (currentCity.factionId === 7 && aliveEnemies.length > 1) {
+       // Check if clicked near a city we can actually attack
+       const targetCity = this.state.cities.find(c => Math.hypot(c.x - x, c.y - y) < 80);
+       if (targetCity && !currentCity.attackedBy?.includes(targetCity.id)) {
+          console.log("Alianza Cobalto cannot attack unprovoked!");
+          // Maybe show a UI hint later
+          return;
+       }
+    }
+
     const dist = Math.hypot(x - currentCity.x, y - currentCity.y);
     if (dist < 80) return;
 
@@ -593,7 +613,17 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     if (this.defenseUsed) return;
     
     const myCity = this.state.cities.find(c => c.id === this.myCityId());
-    if (!myCity || !myCity.isAlive || myCity.ammo < 2) return;
+    if (!myCity || !myCity.isAlive) return;
+
+    // Faction: Tecnocracia Blanca (6) - Limit 1 defense per round
+    if (myCity.factionId === 6 && (myCity.defensesThisRound || 0) >= 1) {
+      console.log("Tecnocracia Blanca limit reached!");
+      return;
+    }
+
+    // Faction: defense costs
+    const defenseCost = myCity.factionId === 3 ? 3 : (myCity.factionId === 1 ? 1 : 2);
+    if (myCity.ammo < defenseCost) return;
 
     const incomingMissiles = this.state.missiles.filter(m => m.active && !m.isDefensive);
     let closest: Missile | null = null;
@@ -697,8 +727,14 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private checkAutoWinVsBots(): void {
-    if (this.state.phase === 'gameover') return;
+    if (!this.state || this.state.phase === 'gameover') return;
     
+    // Sync bot status from roomPlayers to state.cities for reliability
+    this.state.cities.forEach(c => {
+      const p = this.roomPlayers().find(rp => rp.cityId === c.id);
+      if (p && p.isBot) c.isBot = true;
+    });
+
     const aliveRealCities = this.state.cities.filter(c => c.isAlive && !c.isBot);
     const aliveBotCities = this.state.cities.filter(c => c.isAlive && c.isBot);
     
@@ -816,11 +852,12 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     let attempts = 0;
     while (attempts < this.state.cities.length) {
       const city = this.state.cities[next];
-      if (city.isAlive && city.ammo > 0) break;
+      const isDisabled = city.activeSkills.includes('disabled');
+      if (city.isAlive && city.ammo > 0 && !isDisabled) break;
       next = (next + 1) % this.state.cities.length;
       attempts++;
     }
-    return { index: next, cityId: this.state.cities[next].id };
+    return { index: next, cityId: this.state.cities[next] ? this.state.cities[next].id : -1 };
   }
 
   private executeBotTurn(cityId: number) {
@@ -862,7 +899,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     }
     ctx.restore();
 
-    // Continent Highlight
+    // Territory Highlight (Restored per user request, visually representing bases)
     if (this.continentPaths.length > 0) {
       const myIdx = this.myContinentIndex();
       this.continentPaths.forEach((path, idx) => {
@@ -970,7 +1007,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(city.name, city.x, hudY + 12);
+        const factionName = city.factionId != null ? this.gameService.FACTIONS[city.factionId]?.name : null;
+        ctx.fillText(factionName || city.name, city.x, hudY + 12);
         const barW = 80;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(city.x - barW/2, hudY + 22, barW, 4);
@@ -1044,16 +1082,36 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
 
   private renderDamageZones(ctx: CanvasRenderingContext2D): void {
     if (this.state.phase !== 'aiming' || !this.isMyTurn()) return;
+    
+    const factionRadius = 100;
     for (const city of this.state.cities) {
       if (!city.isAlive || city.id === this.myCityId()) continue;
-      if (Math.hypot(this.mouseX - city.x, this.mouseY - city.y) > 200) continue;
-      for (const b of city.buildings) {
-        if (b.destroyed) continue;
-        if (Math.abs(this.mouseX - b.x) < 15 && Math.abs(this.mouseY - b.y) < 15) {
-          ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
-          ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI * 2); ctx.stroke();
-        }
+      
+      const dist = Math.hypot(this.mouseX - city.x, this.mouseY - city.y);
+      
+      // Draw a faint glow area for the faction
+      ctx.beginPath();
+      ctx.arc(city.x, city.y, factionRadius, 0, Math.PI * 2);
+      
+      if (dist < factionRadius) {
+        ctx.fillStyle = city.color + '33'; // Highlight if hovering
+        ctx.strokeStyle = city.color;
+        ctx.lineWidth = 2;
+      } else {
+        ctx.fillStyle = city.color + '11';
+        ctx.strokeStyle = city.color + '44';
+        ctx.lineWidth = 1;
       }
+      
+      ctx.fill();
+      ctx.stroke();
+      
+      // Draw static "Zone" text
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.globalAlpha = dist < factionRadius ? 1.0 : 0.4;
+      ctx.fillText('ZONA DE IMPACTO', city.x, city.y + factionRadius + 15);
+      ctx.globalAlpha = 1.0;
     }
   }
   async buyUpgrade(stat: string) {

@@ -216,10 +216,19 @@
 
 .city-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
   color: #fff;
   text-transform: uppercase;
+}
+
+.player-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #9ca3af;
+  opacity: 0.8;
 }
 
 .bot-tag {

@@ -44,6 +44,12 @@ export class LobbyComponent implements OnInit {
   isCreatePublic = signal(false);
   roomNameInput = signal('');
   roomMessages = signal<any[]>([]);
+  
+  selectedFactionForDetail = signal<any | null>(null);
+  myFactionId = computed(() => {
+    const me = this.roomPlayers().find(p => p.cityId === this.myCityId());
+    return me ? me.factionId : null;
+  });
 
   publicRooms = this.wsService.publicRooms;
   globalChat = this.wsService.globalChat;
@@ -67,17 +73,56 @@ export class LobbyComponent implements OnInit {
     return me ? me.continentIndex : -1;
   });
 
-  allPlayersReady = computed(() => {
-    const players = this.roomPlayers();
-    return players.length >= 2 && players.every(p => p.continentIndex >= 0);
+  myReadyStatus = computed(() => {
+    const me = this.roomPlayers().find(p => p.cityId === this.myCityId());
+    return me ? me.isReady : false;
   });
 
+  everyoneReady = computed(() => {
+    const players = this.roomPlayers();
+    return players.length >= 2 && players.every(p => p.isReady);
+  });
+
+  allPlayersReady = computed(() => {
+    const players = this.roomPlayers();
+    return this.everyoneReady() && players.every(p => 
+      (p.isBot || (p.factionId !== undefined && p.factionId !== null && p.factionId >= 0))
+    );
+  });
+
+  toggleReady() {
+    this.wsService.toggleReady(this.currentRoomId());
+  }
+
   isContinentTaken(index: number): boolean {
-    return this.roomPlayers().some(p => p.continentIndex === index);
+    return this.roomPlayers().some(p => p.continentIndex === index && p.cityId !== this.myCityId());
+  }
+
+  isFactionTaken(id: number): boolean {
+    return this.roomPlayers().some(p => p.factionId === id && p.cityId !== this.myCityId());
   }
 
   selectContinent(index: number) {
     this.wsService.chooseContinent(this.currentRoomId(), index);
+  }
+
+  getFactionColor(factionId?: number): string {
+    if (factionId == null || factionId < 0) return '#1f2937';
+    return this.gameService.FACTIONS[factionId]?.color || '#1f2937';
+  }
+
+  getFactionName(factionId?: number): string {
+    if (factionId == null || factionId < 0) return '';
+    return this.gameService.FACTIONS[factionId]?.name || '';
+  }
+
+  viewFactionDetail(faction: any) {
+    this.selectedFactionForDetail.set(faction);
+  }
+
+  confirmFactionSelection(factionId: number) {
+    this.wsService.chooseFaction(this.currentRoomId(), factionId);
+    this.selectedFactionForDetail.set(null);
   }
 
   isHost(): boolean {

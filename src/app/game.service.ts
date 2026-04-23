@@ -10,6 +10,7 @@ export class GameService {
   private nextMissileId = 0;
   private canvasWidth = 0;
   private canvasHeight = 0;
+  private currentRoomId: string = '';
 
   readonly countryLocations = [
     { name: 'Norteamérica', x: 260, y: 190, color: '#00e5ff', accent: '#00b8d4' },
@@ -17,10 +18,86 @@ export class GameService {
     { name: 'Sudamérica', x: 380, y: 500, color: '#76ff03', accent: '#64dd17' },
     { name: 'África', x: 650, y: 420, color: '#ffab40', accent: '#ff9100' }
   ];
+  
+  readonly FACTIONS = [
+    {
+      id: 0,
+      name: 'Legión Roja',
+      icon: '🟥',
+      description: 'Guerra total y fuerza bruta.',
+      passive: 'Tus misiles quitan un 50% más de vida.',
+      contra: 'Tu base tiene un 20% menos de vida.',
+      color: '#ff4444'
+    },
+    {
+      id: 1,
+      name: 'Nexo Zafiro',
+      icon: '🟦',
+      description: 'Maestros de la interceptación.',
+      passive: 'Interceptar te cuesta 1 misil (en lugar de 2).',
+      contra: 'Tus ataques quitan un 20% menos de vida.',
+      color: '#4444ff'
+    },
+    {
+      id: 2,
+      name: 'Banco Oro',
+      icon: '🟨',
+      description: 'Acumulación de recursos masiva.',
+      passive: 'Empiezas con 75 misiles (en lugar de 50).',
+      contra: 'Si un misil te impacta, pierdes 5 misiles extra.',
+      color: '#ffcc00'
+    },
+    {
+      id: 3,
+      name: 'Sindicato Umbra',
+      icon: '🟪',
+      description: 'Piratería y robo de suministros.',
+      passive: 'Si interceptas con éxito, robas 2 misiles al atacante.',
+      contra: 'Tu defensa cuesta 3 misiles (en lugar de 2).',
+      color: '#aa44ff'
+    },
+    {
+      id: 4,
+      name: 'Orden Esmeralda',
+      icon: '🟩',
+      description: 'Conversión de energía cinética.',
+      passive: 'Si recibes un impacto, recuperas 6 misiles.',
+      contra: 'Atacar te cuesta 3 misiles (en lugar de 1).',
+      color: '#44ff44'
+    },
+    {
+      id: 5,
+      name: 'Forja Volcánica',
+      icon: '🟧',
+      description: 'Tecnología de inhabilitación.',
+      passive: 'Si tu misil impacta, bloqueas la lanzadera enemiga 1 turno.',
+      contra: 'Atacar te cuesta 5 misiles.',
+      color: '#ff8800'
+    },
+    {
+      id: 6,
+      name: 'Tecnocracia Blanca',
+      icon: '⬜',
+      description: 'Producción en cadena automatizada.',
+      passive: 'Ganas 2 misiles cada vez que termina una ronda.',
+      contra: 'Solo puedes defenderte de un ataque por ronda.',
+      color: '#eeeeee'
+    },
+    {
+      id: 7,
+      name: 'Alianza Cobalto',
+      icon: '⬛',
+      description: 'Justicia reactiva extrema.',
+      passive: 'Daño Doble contra quienes te hayan atacado esta ronda.',
+      contra: 'No puedes atacar a quienes no te hayan atacado antes.',
+      color: '#333333'
+    }
+  ];
 
-  initGame(canvasWidth: number, canvasHeight: number, players: any[], currentUserStats: User | null): GameState {
+  initGame(canvasWidth: number, canvasHeight: number, players: any[], currentUserStats: User | null, roomId: string): GameState {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
+    this.currentRoomId = roomId || 'default';
     this.nextMissileId = 0;
 
     const cities = this.createCities(players, currentUserStats);
@@ -42,20 +119,40 @@ export class GameService {
 
   private createCities(players: any[], currentUserStats: User | null): City[] {
     const cities: City[] = [];
+    
+    // Seeded Random based on roomId to ensure all clients assign the same continents
+    const seed = (this.currentRoomId || 'default').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+    const rng = () => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const continentIndices = [0, 1, 2, 3];
+    // Simple Fisher-Yates with seeded rng
+    for (let i = continentIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [continentIndices[i], continentIndices[j]] = [continentIndices[j], continentIndices[i]];
+    }
 
     for (let i = 0; i < players.length; i++) {
       const p = players[i];
       const isMe = currentUserStats && p.name === currentUserStats.username;
       
-      const continentIdx = (p.continentIndex != null && p.continentIndex >= 0) 
-                           ? p.continentIndex 
-                           : (i % this.countryLocations.length);
-                           
+      // Use the randomized unique index
+      const continentIdx = continentIndices[i % continentIndices.length];
+                            
       const loc = this.countryLocations[continentIdx];
       const buildings = this.createBuildings(loc.x, loc.y, i * 1000);
       
-      let baseHealth = buildings.reduce((sum, b) => sum + (b.healthValue || 0), 0);
+      const factionId = p.factionId ?? 0;
+      
+      let baseHealth = 500;
       let baseAmmo = 50;
+
+      // Faction: Legión Roja (Contra: -20% Health)
+      if (factionId === 0) baseHealth *= 0.8;
+      // Faction: Banco Oro (Passive: +25 Ammo)
+      if (factionId === 2) baseAmmo = 75;
 
       if (isMe && currentUserStats) {
         baseHealth *= (1 + (currentUserStats.healthLevel * 0.1));
@@ -64,7 +161,7 @@ export class GameService {
 
       cities.push({
         id: (p.cityId !== undefined && p.cityId !== null) ? p.cityId : i,
-        name: loc.name,
+        name: p.name,
         x: loc.x,
         y: loc.y,
         health: baseHealth,
@@ -75,7 +172,8 @@ export class GameService {
         isAlive: true,
         ammo: baseAmmo,
         statusEffects: [],
-        activeSkills: []
+        activeSkills: [],
+        factionId: factionId
       });
     }
     return cities;
@@ -135,9 +233,15 @@ export class GameService {
 
   launchMissile(state: GameState, fromCityId: number, targetX: number, targetY: number, elapsedMs: number = 0): Missile | null {
     const city = state.cities.find(c => c.id === fromCityId);
-    if (!city || city.ammo <= 0) return null;
-    
-    city.ammo -= 1;
+    if (!city) return null;
+
+    // Faction: Attack Costs
+    let attackCost = 1;
+    if (city.factionId === 4) attackCost = 3; // Orden Esmeralda
+    if (city.factionId === 5) attackCost = 5; // Forja Volcánica
+
+    if (city.ammo < attackCost) return null;
+    city.ammo -= attackCost;
     
     const hasHyper = city.activeSkills.includes('hyper-speed');
     const hasStealth = city.activeSkills.includes('stealth');
@@ -208,9 +312,19 @@ export class GameService {
 
   launchDefensiveMissile(state: GameState, fromCityId: number, targetMissileId: number, hitSuccess: boolean = true, elapsedMs: number = 0): Missile | null {
     const city = state.cities.find(c => c.id === fromCityId);
-    if (!city || city.ammo < 1) return null;
+    if (!city || !city.isAlive) return null;
 
-    city.ammo -= 1;
+    // Faction: Tecnocracia Blanca (6) - Limit 1 defense per round
+    if (city.factionId === 6 && (city.defensesThisRound || 0) >= 1) return null;
+
+    // Faction: Defense Costs
+    let defenseCost = 2;
+    if (city.factionId === 1) defenseCost = 1; // Nexo Zafiro
+    if (city.factionId === 3) defenseCost = 3; // Sindicato Umbra
+
+    if (city.ammo < defenseCost) return null;
+    city.ammo -= defenseCost;
+    city.defensesThisRound = (city.defensesThisRound || 0) + 1;
 
     const targetMissile = state.missiles.find(m => m.id === targetMissileId);
     
@@ -282,6 +396,17 @@ export class GameService {
             if (missile.hitSuccess) {
               target.active = false;
               this.createExplosion(state, target.currentX, target.currentY, '#ffffff', true);
+              
+              // Faction: Sindicato Umbra (3) - Rob 2 missiles on successful intercept
+              const interceptorCity = state.cities.find(c => c.id === missile.fromCityId);
+              if (interceptorCity && interceptorCity.factionId === 3) {
+                const attacker = state.cities.find(c => c.id === target.fromCityId);
+                if (attacker) {
+                  const stolen = Math.min(attacker.ammo, 2);
+                  attacker.ammo -= stolen;
+                  interceptorCity.ammo += stolen;
+                }
+              }
             } else {
               this.createExplosion(state, missile.currentX, missile.currentY, '#aaaaaa', true);
             }
@@ -341,7 +466,7 @@ export class GameService {
     state.explosions.push({
       x, y,
       radius: 0,
-      maxRadius: isSmall ? 30 : (isNuclear ? 150 : 60),
+      maxRadius: isSmall ? 30 : (isNuclear ? 200 : 100), // Increased radius visuals
       alpha: 1,
       color,
       particles,
@@ -363,7 +488,7 @@ export class GameService {
 
       if (exp.isCityImpact && !exp.wasIntercepted && !exp.damageApplied && exp.alpha <= 0.6) {
         exp.damageApplied = true;
-        this.applyDamage(state, exp.x, exp.y);
+        this.applyDamage(state, exp.x, exp.y, exp.missileId);
       }
 
       for (const p of exp.particles) {
@@ -389,41 +514,66 @@ export class GameService {
     state.floatingRewards = state.floatingRewards.filter(r => r.alpha > 0);
   }
 
-  private applyDamage(state: GameState, hitX: number, hitY: number): void {
-    const explosionRadius = 25;
+  private applyDamage(state: GameState, hitX: number, hitY: number, missileId?: number): void {
+    const factionRadius = 100; // Radius where faction takes damage
+    const missile = state.missiles.find(m => m.id === missileId);
+    const isNuclear = missile?.isNuclear;
 
     for (const city of state.cities) {
       if (!city.isAlive) continue;
 
-      let damage = 0;
-      for (const b of city.buildings) {
-        if (b.destroyed) continue;
+      const dist = Math.hypot(hitX - city.x, hitY - city.y);
+      if (dist < factionRadius) {
+        const attacker = state.missiles.find(m => m.id === missileId);
+        const attackerCity = state.cities.find(c => c.id === attacker?.fromCityId);
 
-        const dist = Math.hypot(hitX - b.x, hitY - b.y);
-        if (dist < explosionRadius + 10) {
-          b.destroyed = true;
-          damage += b.healthValue || 25;
-          
-          state.lootEarned += 1;
-          state.floatingRewards.push({
-            id: Date.now() + Math.random(),
-            x: b.x,
-            y: b.y,
-            value: '+1 CC',
-            alpha: 1,
-            active: true,
-            yOffset: 0
-          });
+        // Faction: Track attacks for Alianza Cobalto
+        if (attackerCity) {
+          city.attackedBy = city.attackedBy || [];
+          if (!city.attackedBy.includes(attackerCity.id)) city.attackedBy.push(attackerCity.id);
         }
-      }
 
-      if (damage === 0) {
-        const dist = Math.abs(hitX - city.x);
-        if (dist < 30) damage = 10;
-      }
+        // Calculate fixed damage: 50 base, 100 if nuclear
+        let damage = isNuclear ? 100 : 50;
+        
+        // Faction: Legión Roja (0) - +50% Damage
+        if (attackerCity?.factionId === 0) damage *= 1.5;
+        // Faction: Nexo Zafiro (1) - -20% Damage
+        if (attackerCity?.factionId === 1) damage *= 0.8;
+        // Faction: Alianza Cobalto (7) - Double damage if target attacked me
+        if (attackerCity?.factionId === 7 && attackerCity.attackedBy?.includes(city.id)) {
+          damage *= 2;
+        }
 
-      if (damage > 0) {
         city.health = Math.max(0, city.health - damage);
+
+        // Faction: Banco Oro (2) - Extra ammo loss
+        if (city.factionId === 2) city.ammo = Math.max(0, city.ammo - 5);
+        // Faction: Orden Esmeralda (4) - Recover 6 ammo if hit
+        if (city.factionId === 4) city.ammo += 6;
+        // Faction: Forja Volcánica (5) - Disable next turn
+        if (attackerCity?.factionId === 5) {
+          city.statusEffects.push({ type: 'disabled', turns: 1 });
+          city.activeSkills = city.statusEffects.map(e => e.type);
+        }
+
+        // Visual destruction of buildings in the impact area (purely visual/loot)
+        for (const b of city.buildings) {
+          if (!b.destroyed && Math.hypot(hitX - b.x, hitY - b.y) < (isNuclear ? 60 : 35)) {
+            b.destroyed = true;
+            state.lootEarned += 1;
+            state.floatingRewards.push({
+              id: Date.now() + Math.random(),
+              x: b.x,
+              y: b.y,
+              value: '+1 CC',
+              alpha: 1,
+              active: true,
+              yOffset: 0
+            });
+          }
+        }
+
         if (city.health <= 0) {
           city.isAlive = false;
           this.destroyCityBuildings(city);
@@ -477,14 +627,29 @@ export class GameService {
       }
     }
     
+    const isNewRound = next < state.currentPlayerIndex;
+    
     state.currentPlayerIndex = next;
     state.turnNumber++;
+
+    if (isNewRound) {
+      for (const city of state.cities) {
+        // Faction: Tecnocracia Blanca (6) - +2 Ammo Round end
+        if (city.isAlive && city.factionId === 6) city.ammo += 2;
+        
+        // Faction: Alianza Cobalto (7) - Reset revenge list? 
+        // User says "en esta ronda", so yes, reset after round ends.
+        city.attackedBy = [];
+        city.defensesThisRound = 0;
+      }
+    }
 
     for (const city of state.cities) {
       city.statusEffects.forEach(effect => effect.turns--);
       city.statusEffects = city.statusEffects.filter(e => e.turns > 0);
       city.activeSkills = city.statusEffects.map(e => e.type);
     }
+
     state.phase = 'aiming';
   }
 
@@ -506,7 +671,15 @@ export class GameService {
   }
 
   getTargetableCities(state: GameState): City[] {
-    return state.cities.filter(c => c.isAlive && c.id !== state.cities[state.currentPlayerIndex].id);
+    const me = state.cities[state.currentPlayerIndex];
+    const aliveEnemies = state.cities.filter(c => c.isAlive && c.id !== me.id);
+    
+    // Faction: Alianza Cobalto (7) - Can't attack unprovoked (unless 1vs1)
+    if (me.factionId === 7 && aliveEnemies.length > 1) {
+      return aliveEnemies.filter(c => me.attackedBy?.includes(c.id));
+    }
+    
+    return aliveEnemies;
   }
 
   getIncomingMissiles(state: GameState, cityId: number): Missile[] {

@@ -30,6 +30,19 @@ export interface City {
   activeSkills: string[];
   isBot?: boolean;
   afkCount?: number;
+  factionId?: number;
+  defensesThisRound?: number; // For Tecnocracia Blanca
+  attackedBy?: number[]; // For Alianza Cobalto
+}
+
+export interface Faction {
+  id: number;
+  name: string;
+  icon: string;
+  description: string;
+  passive: string;
+  contra: string;
+  color: string;
 }
 
 export interface Missile {

@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { City, GamePhase } from '../../models/game.models';
 import { AuthService } from '../../auth.service';
+import { GameService } from '../../game.service';
 import { inject } from '@angular/core';
 
 @Component({
@@ -11,6 +12,11 @@ import { inject } from '@angular/core';
 })
 export class GameHudComponent {
   public authService = inject(AuthService);
+  public gameService = inject(GameService);
+  getFactionName(id?: number): string {
+    if (id == null || id < 0) return 'N/A';
+    return this.gameService.FACTIONS[id]?.name || 'N/A';
+  }
 
   cities             = input.required<City[]>();
   gamePhase          = input.required<GamePhase>();

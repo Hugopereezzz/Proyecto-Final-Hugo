@@ -48,7 +48,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         public String name;
         public int cityId;
         public int continentIndex = -1; // -1 means not chosen yet
+        public int factionId = -1;      // -1 means not chosen yet
         public boolean isBot = false;
+        public boolean isReady = false;
         public String avatarBase64;
     }
 
@@ -81,6 +83,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     if (p.id.equals(session.getId())) {
                         p.isBot = true;
                         broadcast(room, "player-became-bot", Map.of("cityId", p.cityId));
+                        broadcast(room, "room-update", room.players);
                         break;
                     }
                 }
@@ -95,8 +98,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     rooms.remove(room.id);
                 } else {
                     // Update host name if the old host left (compare by name)
-                    if (!room.players.stream().anyMatch(p -> p.name.equals(room.hostName))) {
-                        room.hostName = room.players.get(0).name;
+                    if (!room.players.stream().anyMatch(p -> p.name.equals(room.hostName) && !p.isBot)) {
+                        room.hostName = room.players.stream().filter(p -> !p.isBot).findFirst().map(p -> p.name).orElse(room.players.get(0).name);
                     }
                     broadcast(room, "room-update", room.players);
                 }
@@ -137,6 +140,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             case "choose-continent":
                 handleChooseContinent(session, data);
                 break;
+            case "choose-faction":
+                handleChooseFaction(session, data);
+                break;
+            case "toggle-ready":
+                handleToggleReady(session, data);
+                break;
             case "report-victory":
                 handleReportVictory(session, data);
                 break;
@@ -155,6 +164,21 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             case "get-public-rooms":
                 send(session, "public-rooms-update", getPublicRoomsList());
                 break;
+        }
+    }
+
+    private void handleToggleReady(WebSocketSession session, Map<String, Object> data) throws IOException {
+        String roomId = (String) data.get("roomId");
+        if (roomId != null) roomId = roomId.toUpperCase();
+        Room room = rooms.get(roomId);
+        if (room != null && !room.inGame) {
+            for (Player p : room.players) {
+                if (p.id.equals(session.getId())) {
+                    p.isReady = !p.isReady;
+                    broadcast(room, "room-update", room.players);
+                    break;
+                }
+            }
         }
     }
 
@@ -249,10 +273,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             // Remove disconnected players/bots so the room is clean for the next game
             room.players.removeIf(p -> p.isBot);
             
-            // Reset continent selection for remaining players
+            // Reset continent selection, faction and ready status for remaining players
             for (Player p : room.players) {
                 p.continentIndex = -1;
+                p.factionId = -1;
+                p.isReady = false;
             }
+            broadcast(room, "room-update", room.players);
 
             if (room.players.isEmpty()) {
                 rooms.remove(roomId);
@@ -274,6 +301,29 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             
             if (room.isPublic) {
                 broadcastPublicRooms();
+            }
+        }
+    }
+
+    private void handleChooseFaction(WebSocketSession session, Map<String, Object> data) throws IOException {
+        String roomId = (String) data.get("roomId");
+        if (roomId != null) roomId = roomId.toUpperCase();
+        Integer factionId = (Integer) data.get("factionId");
+        
+        Room room = rooms.get(roomId);
+        if (room != null && !room.inGame) {
+            for (Player p : room.players) {
+                if (p.id.equals(session.getId())) {
+                    // Unique faction check
+                    boolean taken = room.players.stream()
+                        .anyMatch(other -> other.factionId == factionId && !other.id.equals(p.id));
+                    
+                    if (!taken) {
+                        p.factionId = factionId;
+                        broadcast(room, "room-update", room.players);
+                    }
+                    break;
+                }
             }
         }
     }
@@ -409,7 +459,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         String roomId = (String) data.get("roomId");
         if (roomId != null) roomId = roomId.toUpperCase();
         Room room = rooms.get(roomId);
-        if (room != null && !room.inGame) {
+        if (room != null && !room.inGame && room.players.size() >= 2) {
+            // Server-side validation for Ready-up, and Faction selection
+            // Bots are always considered "valid" for starting
+            boolean allValid = room.players.stream().allMatch(p -> p.isBot || (p.isReady && p.factionId >= 0));
+            if (!allValid) return;
+
             room.inGame = true;
             room.turnCount = 0;
             room.currentPlayerIndex = 0;
@@ -451,20 +506,37 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (roomId != null) roomId = roomId.toUpperCase();
         Room room = rooms.get(roomId);
         if (room != null) {
-            room.players.removeIf(p -> p.id.equals(session.getId()));
+            if (room.inGame) {
+                // Durante partida, no expulsar, convertir en bot para mantener el estado
+                for (Player p : room.players) {
+                    if (p.id.equals(session.getId())) {
+                        p.isBot = true;
+                        broadcast(room, "player-became-bot", Map.of("cityId", p.cityId));
+                        break;
+                    }
+                }
+                // Si todos son bots ahora, cerramos la sala
+                boolean allBots = room.players.stream().allMatch(p -> p.isBot);
+                if (allBots) {
+                    rooms.remove(roomId);
+                } else {
+                    broadcast(room, "room-update", room.players);
+                }
+            } else {
+                room.players.removeIf(p -> p.id.equals(session.getId()));
+                if (room.players.isEmpty()) {
+                    rooms.remove(roomId);
+                } else {
+                    // Actualizar host si el dueño se fue (comparando nombres)
+                    if (!room.players.stream().anyMatch(p -> p.name.equals(room.hostName) && !p.isBot)) {
+                        room.hostName = room.players.stream().filter(p -> !p.isBot).findFirst().map(p -> p.name).orElse(room.players.get(0).name);
+                    }
+                    broadcast(room, "room-update", room.players);
+                }
+            }
             playerRooms.remove(session.getId());
             
-            if (room.players.isEmpty()) {
-                rooms.remove(roomId);
-            } else {
-                // Actualizar host si el dueño se fue (comparando nombres)
-                if (!room.players.stream().anyMatch(p -> p.name.equals(room.hostName))) {
-                    room.hostName = room.players.get(0).name;
-                }
-                broadcast(room, "room-update", room.players);
-            }
-            
-            if (room.isPublic) {
+            if (room.isPublic && !room.inGame) {
                 broadcastPublicRooms();
             }
         }

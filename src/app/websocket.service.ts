@@ -7,7 +7,9 @@ export interface RoomPlayer {
   cityId: number;
   continentIndex: number;
   isBot?: boolean;
+  isReady?: boolean;
   avatarBase64?: string;
+  factionId?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -158,6 +160,14 @@ export class WebsocketService {
 
   chooseContinent(roomId: string, continentIndex: number) {
     this.send('choose-continent', { roomId, continentIndex });
+  }
+
+  chooseFaction(roomId: string, factionId: number) {
+    this.send('choose-faction', { roomId, factionId });
+  }
+
+  toggleReady(roomId: string) {
+    this.send('toggle-ready', { roomId });
   }
 
   reportVictory(roomId: string, winnerName: string) {
