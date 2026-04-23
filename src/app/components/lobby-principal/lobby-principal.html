@@ -1,0 +1,34 @@
+<!-- Vista LOBBY: Panel principal con todos los subcomponentes -->
+<div class="lobby-container" *ngIf="vistaActual === 'lobby'">
+
+  <!-- Barra de Navegación Superior -->
+  <app-nav-bar class="area-nav" [username]="username()"></app-nav-bar>
+
+  <!-- Panel Izquierdo: Ranking Global -->
+  <app-global-ranking class="area-ranking cyber-panel panel-red"></app-global-ranking>
+
+  <!-- Panel Central Superior: Acciones de Lobby (Crear / Unirse) -->
+  <app-lobby-creation
+    class="area-actions cyber-panel"
+    (salaUnida)="onSalaUnida($event)"
+  ></app-lobby-creation>
+
+  <!-- Panel Central Inferior: Lobbies Disponibles -->
+  <app-available-lobbies
+    class="area-lobbies cyber-panel"
+    (salaUnida)="onSalaUnida($event)"
+  ></app-available-lobbies>
+
+  <!-- Panel Derecho: Chat Global -->
+  <app-global-chat class="area-chat cyber-panel"></app-global-chat>
+
+</div>
+
+<!-- Vista SALA: Componente de sala activa (reemplaza todo el lobby) -->
+<app-sala-juego
+  *ngIf="vistaActual === 'sala' && salaActual"
+  [codigoSala]="codigoSalaActual"
+  [salaInicial]="salaActual"
+  [miNombre]="username()"
+  (salidaSala)="onSalidaSala()"
+></app-sala-juego>

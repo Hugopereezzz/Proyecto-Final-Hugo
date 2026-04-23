@@ -1,0 +1,36 @@
+<div class="nav-container">
+  <div class="nav-logo">
+    <span class="icon">🚀</span>
+    <div class="logo-text">
+      <span class="title">PULSO</span>
+      <span class="subtitle">GLOBAL</span>
+    </div>
+  </div>
+
+  <div class="nav-links">
+    <div class="nav-system">SYSTEM NAV</div>
+    <div class="links">
+      <span class="active">MENÚ PRINCIPAL</span> | <span>MI PERFIL</span> | <span>SYSTEM LOG</span>
+    </div>
+  </div>
+
+  <div class="nav-user">
+    <div class="user-profile cyber-panel">
+      <span class="user-icon">👤</span>
+      <div class="user-info">
+        <span class="username">{{ username() | uppercase }}</span>
+        <span class="status"><span class="dot"></span> connected</span>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="action-btn">
+        <span class="icon">⚙️</span>
+        <span>AJUSTES</span>
+      </button>
+      <button class="action-btn" (click)="logout()">
+        <span class="icon">🚪</span>
+        <span>CERRAR SESIÓN</span>
+      </button>
+    </div>
+  </div>
+</div>

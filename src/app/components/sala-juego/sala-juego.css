@@ -1,0 +1,365 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Layout de dos paneles (info sala + chat) */
+.sala-container {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 15px;
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* ========== PANEL IZQUIERDO ========== */
+.sala-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sala-header {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-bottom: 1px solid var(--neon-cyan-dim);
+  padding-bottom: 15px;
+}
+
+.sala-titulo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cyber-title {
+  font-family: var(--font-header);
+  color: var(--neon-cyan);
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+.sala-tipo {
+  font-family: var(--font-header);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+.sala-tipo.publica {
+  color: var(--neon-green);
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.1);
+}
+
+.sala-tipo.privada {
+  color: var(--neon-red);
+  border-color: var(--neon-red);
+  background: rgba(255, 60, 60, 0.1);
+}
+
+/* Código de sala */
+.codigo-sala {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.codigo-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  font-family: var(--font-header);
+}
+
+.codigo-display {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--neon-cyan-dim);
+  border-radius: 8px;
+  padding: 10px 15px;
+}
+
+.codigo-valor {
+  font-family: var(--font-header);
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--neon-cyan);
+  letter-spacing: 6px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.btn-copiar {
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-header);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-copiar:hover {
+  background: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.btn-copiar.copiado {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.15);
+}
+
+/* ========== JUGADORES ========== */
+.jugadores-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-family: var(--font-header);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+.jugadores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jugador-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.jugador-card.listo {
+  border-color: rgba(57, 255, 20, 0.4);
+  background: rgba(57, 255, 20, 0.05);
+}
+
+.jugador-card.yo {
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.jugador-card.vacio {
+  opacity: 0.3;
+  border-style: dashed;
+}
+
+.jugador-estado { font-size: 16px; }
+.dot-vacio { font-size: 16px; color: var(--text-muted); }
+
+.jugador-nombre {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vacio-txt { color: var(--text-muted); font-size: 13px; }
+
+.host-badge, .yo-badge {
+  font-family: var(--font-header);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.host-badge {
+  background: rgba(255, 200, 0, 0.2);
+  border: 1px solid rgba(255, 200, 0, 0.5);
+  color: #ffc800;
+}
+
+.yo-badge {
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid var(--neon-cyan-dim);
+  color: var(--neon-cyan);
+}
+
+.jugador-estado-txt {
+  font-family: var(--font-header);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.txt-listo { color: var(--neon-green); }
+
+/* ========== CONTROLES ========== */
+.sala-controles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-listo {
+  padding: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  font-family: var(--font-header);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  justify-content: center;
+}
+
+.btn-listo:hover:not(.activo) {
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.1);
+  color: var(--neon-green);
+}
+
+.btn-listo.activo {
+  border-color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.2);
+  color: var(--neon-green);
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+}
+
+.btn-salir {
+  padding: 10px;
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 60, 60, 0.05);
+  color: var(--neon-red);
+  font-family: var(--font-header);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  justify-content: center;
+}
+
+.btn-salir:hover {
+  background: rgba(255, 60, 60, 0.15);
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.3);
+}
+
+/* ========== CHAT DE SALA ========== */
+.sala-chat {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 240, 255, 0.08);
+  border-bottom: 1px solid var(--neon-cyan-dim);
+}
+
+.sala-chat .cyber-title {
+  font-size: 14px;
+}
+
+.chat-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.sala-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sala-chat-messages::-webkit-scrollbar { width: 4px; }
+.sala-chat-messages::-webkit-scrollbar-thumb { background: var(--neon-cyan-dim); border-radius: 2px; }
+
+.chat-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 13px;
+  align-items: baseline;
+}
+
+.msg-hora {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 10px;
+}
+
+.msg-remitente {
+  font-family: var(--font-header);
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
+.msg-sistema .msg-remitente { color: var(--text-muted); }
+.msg-sistema .msg-contenido { color: var(--text-muted); font-style: italic; }
+.msg-yo .msg-remitente { color: var(--neon-green); }
+
+.msg-contenido { color: var(--text-main); }
+
+.chat-input-area {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid var(--neon-cyan-dim);
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--neon-cyan-dim);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chat-input:focus { border-color: var(--neon-cyan); }
+.chat-input::placeholder { color: var(--text-muted); }
+
+.btn-send {
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.btn-send:hover {
+  background: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}

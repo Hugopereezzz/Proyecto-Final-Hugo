@@ -1,0 +1,121 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 240, 255, 0.1);
+  border-bottom: 1px solid var(--neon-cyan-dim);
+}
+
+.cyber-title {
+  color: var(--text-main);
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+}
+
+.welcome-msg h3 {
+  font-family: var(--font-header);
+  color: var(--text-main);
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.msg {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sender {
+  font-family: var(--font-header);
+  font-weight: 700;
+  margin-right: 5px;
+}
+
+.system .sender {
+  color: var(--text-muted);
+}
+.system .content {
+  color: var(--text-muted);
+}
+
+.user .sender {
+  color: var(--neon-cyan);
+}
+.user .content {
+  color: var(--text-main);
+}
+
+.me .sender {
+  color: var(--neon-green);
+}
+.me .content {
+  color: var(--text-main);
+}
+
+.chat-input-area {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid var(--neon-cyan-dim);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 12px;
+  outline: none;
+  padding: 5px;
+}
+
+.chat-input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-send {
+  background: transparent;
+  border: none;
+  color: var(--neon-cyan);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.btn-send:hover {
+  transform: scale(1.1);
+}

@@ -1,42 +1,11 @@
-<div class="game-container" id="game-container" [attr.data-phase]="gamePhase()">
-
-  <!-- 1. AUTH PHASE -->
-  @if (gamePhase() === 'auth') {
-  <app-login (loginSuccess)="refreshLeaderboard(); gamePhase.set('setup')" />
-  }
-
-  <!-- 2. SETUP / LOBBY PHASE -->
-  @if (gamePhase() === 'setup') {
-  <app-lobby [leaderboardRows]="leaderboardRows()" [roomPlayers]="roomPlayers()" [inRoom]="inRoom()"
-    [currentRoomId]="currentRoomId()" [myCityId]="myCityId()"
-    (roomCreated)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
-    (roomJoined)="currentRoomId.set($event.roomId); myCityId.set($event.cityId); inRoom.set(true)"
-    (gameStarted)="gamePhase.set('aiming')" (leftRoom)="leaveGame()" (loggedOut)="logout()"
-    (refreshLeaderboard)="refreshLeaderboard()" />
-  }
-
-  <!-- 3. GAME CANVAS -->
-  <canvas #gameCanvas class="game-canvas" (click)="onCanvasClick($event)" (mousemove)="onCanvasMouseMove($event)"
-    [class.hidden]="gamePhase() === 'setup' || gamePhase() === 'auth'" id="game-canvas"></canvas>
-
-  <!-- 4. HUD OVERLAY -->
-  @if (gamePhase() !== 'setup' && gamePhase() !== 'auth') {
-  <app-game-hud [cities]="cities()" [gamePhase]="gamePhase()" [turnNumber]="turnNumber()" [turnTimer]="turnTimer()"
-    [currentPlayerName]="currentPlayerName()" [currentPlayerColor]="currentPlayerColor()" [isMyTurn]="isMyTurn()"
-    [canDefend]="canDefend()" [lootEarned]="state.lootEarned" (skipDefense)="skipDefense()"
-    (callAllies)="callAlliedSupport()" (leaveGame)="leaveGame()" />
-  }
-
-  <!-- 5. ROULETTE MODAL -->
-  @if (rouletteVisible()) {
-  <app-roulette [player]="roulettePlayer()" [displaySkill]="rouletteDisplaySkill()"
-    [skillDescription]="rouletteSkillDescription()" />
-  }
-
-  <!-- 6. GAME OVER MODAL -->
-  @if (gamePhase() === 'gameover') {
-  <app-game-over [winner]="winner()" [endReason]="endReason()" [winBonus]="winBonus()" [lootEarned]="state.lootEarned"
-    [totalEarnings]="totalEarnings()" (playAgain)="returnToLobby()" />
-  }
-
-</div>
+@if (!isLoggedIn()) {
+  <app-login (loginSuccess)="onLoginSuccess($event)"></app-login>
+} @else {
+  <div class="main-content">
+    <!-- Solo cargamos el componente del Lobby tras el inicio de sesión -->
+    <main>
+      <app-lobby-principal [username]="currentUser()"></app-lobby-principal>
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+}

@@ -1,0 +1,35 @@
+<div class="deployments-header">
+  <h2 class="cyber-title">SALAS DISPONIBLES</h2>
+  <span class="subtitle">ZONAS DE COMBATES DISPONIBLES (SALAS PÚBLICAS)</span>
+</div>
+
+<div class="lobbies-grid">
+
+  <!-- Mensaje cuando no hay salas públicas -->
+  <div class="no-salas" *ngIf="salasPublicas.length === 0">
+    <p>No hay salas públicas disponibles.</p>
+    <p class="hint">¡Crea una sala para empezar!</p>
+  </div>
+
+  <!-- Lista dinámica de salas públicas recibidas del servidor -->
+  <div class="lobby-card" *ngFor="let sala of salasPublicas">
+    <div class="card-status status-green"></div>
+    <div class="card-info">
+      <!-- Nombre de la sala -->
+      <span class="lobby-name">{{ sala.nombre }}</span>
+      <!-- Código de la sala (visible para identificarla) -->
+      <span class="lobby-map">🔑 {{ sala.codigo }}</span>
+    </div>
+    <!-- Jugadores actuales / máximo -->
+    <div class="card-players">{{ sala.jugadoresActuales }}/{{ sala.maxJugadores }}</div>
+    <!-- Botón para unirse directamente -->
+    <button class="btn-join-zone" (click)="unirseASala(sala.codigo)">
+      UNIRSE
+    </button>
+  </div>
+
+</div>
+
+<div class="footer-notice">
+  *LAS SALAS PRIVADAS REQUIEREN UN CÓDIGO DE SALA ÚNICO.*
+</div>

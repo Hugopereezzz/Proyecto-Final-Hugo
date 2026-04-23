@@ -1,0 +1,5 @@
+com\hugo\backend\BackendApplication.class
+com\hugo\backend\controlador\UsuarioController.class
+com\hugo\backend\modelo\Usuario.class
+com\hugo\backend\repositorio\UsuarioRepository.class
+com\hugo\backend\servicio\UsuarioService.class

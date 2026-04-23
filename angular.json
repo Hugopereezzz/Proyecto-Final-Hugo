@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "preuba": {
+    "ProyectoFinal": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,6 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "backend-java/src/main/resources/static",
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
@@ -39,8 +38,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
-                  "maximumError": "16kB"
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all"
@@ -57,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "preuba:build:production"
+              "buildTarget": "ProyectoFinal:build:production"
             },
             "development": {
-              "buildTarget": "preuba:build:development"
+              "buildTarget": "ProyectoFinal:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -89,8 +88,5 @@
         }
       }
     }
-  },
-  "cli": {
-    "analytics": "3d6308da-7676-478b-9857-e0653861346f"
   }
 }

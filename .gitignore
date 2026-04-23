@@ -8,15 +8,8 @@
 
 # Node
 /node_modules
-node_modules/
 npm-debug.log
 yarn-error.log
-
-# Desktop Electron build artifacts
-desktop/node_modules/
-desktop/jre/
-desktop/dist/
-dist-app/
 
 # IDEs and editors
 .idea/
@@ -43,6 +36,7 @@ dist-app/
 /libpeerconnection.log
 testem.log
 /typings
+__screenshots__/
 
 # System files
 .DS_Store

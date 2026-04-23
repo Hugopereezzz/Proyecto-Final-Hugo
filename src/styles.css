@@ -1,42 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
 
-*, *::before, *::after {
+:root {
+  /* Paleta de Colores Cyberpunk (MISSILE COMMAND) */
+  --bg-dark: #0b131a;
+  --panel-bg: rgba(17, 29, 36, 0.85); /* Ligeramente transparente para glassmorphism */
+  --panel-bg-solid: #111d24;
+  --neon-cyan: #00f0ff;
+  --neon-cyan-dim: rgba(0, 240, 255, 0.3);
+  --neon-red: #ff3c3c;
+  --neon-red-dim: rgba(255, 60, 60, 0.3);
+  --neon-green: #39ff14;
+  --neon-green-dim: rgba(57, 255, 20, 0.3);
+  --text-main: #e0e0e0;
+  --text-muted: #8a9ba8;
+  
+  /* Tipografía */
+  --font-header: 'Orbitron', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+/* Estilos globales para asegurar que la aplicación ocupe toda la pantalla */
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Evita scrolls no deseados en la presentación */
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  /* Imagen de fondo sutil tipo rejilla o mundo si la tuviéramos, por ahora fondo oscuro */
+  background-image: radial-gradient(circle at 50% 50%, #111d24 0%, #0b131a 100%);
+}
+
+/* Reset básico para que todos los elementos se comporten de forma predecible */
+* {
   box-sizing: border-box;
 }
 
-html, body {
-  width: 100%;
-  height: 100%;
+/* Estilos de bordes brillantes y paneles comunes */
+.cyber-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--neon-cyan-dim);
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 5px var(--neon-cyan-dim);
+  backdrop-filter: blur(5px);
+  position: relative;
   overflow: hidden;
-  background: #0a0a1a !important;
-  color: #ffffff !important;
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Force global readability */
-* {
-  color: inherit;
+.cyber-panel.panel-red {
+  border-color: var(--neon-red-dim);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 5px var(--neon-red-dim);
 }
 
-button, input, select, textarea {
-  color: #ffffff !important;
-  font-family: inherit;
+.cyber-title {
+  font-family: var(--font-header);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
 }
 
-/* ===== GLOBAL TACTICAL UI ===== */
-:root {
-  --tactical-primary: #00e5ff;
-  --tactical-gold: #ffca28;
-  --tactical-navy: #0d47a1;
-}
-
-/* Legacy Game Nav styles removed to prevent conflicts with new Sidebar design */
-
-/* Utility to force white text elsewhere */
-.force-white {
-  color: #ffffff !important;
+/* Responsividad global */
+@media (max-width: 768px) {
+  html, body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
 }

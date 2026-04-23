@@ -1,0 +1,117 @@
+<div class="sala-container">
+
+  <!-- ========== PANEL IZQUIERDO: INFO DE LA SALA ========== -->
+  <div class="sala-info cyber-panel">
+
+    <!-- Cabecera de la sala -->
+    <div class="sala-header">
+      <div class="sala-titulo">
+        <h2 class="cyber-title">{{ sala?.nombre | uppercase }}</h2>
+        <span class="sala-tipo" [class.publica]="sala?.tipo === 'publica'" [class.privada]="sala?.tipo === 'privada'">
+          {{ sala?.tipo === 'publica' ? '🌐 PÚBLICA' : '🔒 PRIVADA' }}
+        </span>
+      </div>
+      <!-- Código de sala con botón de copiar -->
+      <div class="codigo-sala">
+        <span class="codigo-label">CÓDIGO DE SALA</span>
+        <div class="codigo-display">
+          <span class="codigo-valor">{{ codigoSala() }}</span>
+          <button class="btn-copiar" [class.copiado]="codigoCopiado" (click)="copiarCodigo()" title="Copiar código">
+            {{ codigoCopiado ? '✅ COPIADO' : '📋 COPIAR' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de jugadores en la sala -->
+    <div class="jugadores-section">
+      <span class="section-title">JUGADORES ({{ sala?.jugadores?.length }}/{{ sala?.maxJugadores }})</span>
+      <div class="jugadores-list">
+        <div
+          class="jugador-card"
+          *ngFor="let jugador of sala?.jugadores"
+          [class.yo]="jugador.socketId === socketService.getMiSocketId()"
+          [class.listo]="jugador.listo"
+        >
+          <!-- Indicador de estado listo -->
+          <div class="jugador-estado">
+            <span *ngIf="jugador.listo" class="dot-listo" title="Listo">✅</span>
+            <span *ngIf="!jugador.listo" class="dot-espera" title="Esperando">⏳</span>
+          </div>
+          <!-- Nombre del jugador -->
+          <span class="jugador-nombre">
+            {{ jugador.nombre }}
+            <span *ngIf="sala?.host === jugador.socketId" class="host-badge">HOST</span>
+            <span *ngIf="jugador.socketId === socketService.getMiSocketId()" class="yo-badge">TÚ</span>
+          </span>
+          <!-- Estado textual -->
+          <span class="jugador-estado-txt" [class.txt-listo]="jugador.listo">
+            {{ jugador.listo ? 'LISTO' : 'ESPERANDO' }}
+          </span>
+        </div>
+
+        <!-- Slots vacíos hasta el máximo -->
+        <div
+          class="jugador-card vacio"
+          *ngFor="let i of [].constructor(4 - (sala?.jugadores?.length ?? 0))"
+        >
+          <span class="dot-vacio">○</span>
+          <span class="jugador-nombre vacio-txt">— SLOT LIBRE —</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles del jugador -->
+    <div class="sala-controles">
+      <!-- Botón listo / no listo -->
+      <button
+        class="btn-listo"
+        [class.activo]="miJugador?.listo"
+        (click)="toggleListo()"
+      >
+        {{ miJugador?.listo ? '✅ LISTO' : '⬜ MARCAR COMO LISTO' }}
+      </button>
+
+      <!-- Botón salir de la sala -->
+      <button class="btn-salir" (click)="salirSala()">
+        🚪 SALIR DE LA SALA
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== PANEL DERECHO: CHAT DE SALA ========== -->
+  <div class="sala-chat cyber-panel">
+    <div class="chat-header">
+      <span class="cyber-title">CHAT DE SALA</span>
+      <span class="chat-subtitle">Solo visible para los jugadores de esta sala</span>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div class="sala-chat-messages">
+      <div
+        class="chat-msg"
+        *ngFor="let msg of mensajes"
+        [class.msg-sistema]="msg.tipo === 'sistema'"
+        [class.msg-yo]="msg.remitente === miNombre()"
+      >
+        <span class="msg-hora" *ngIf="msg.timestamp">{{ msg.timestamp }}</span>
+        <span class="msg-remitente">{{ msg.remitente }}:</span>
+        <span class="msg-contenido">{{ msg.contenido }}</span>
+      </div>
+    </div>
+
+    <!-- Input para escribir mensajes -->
+    <div class="chat-input-area">
+      <input
+        type="text"
+        class="chat-input"
+        placeholder="Escribe un mensaje..."
+        [(ngModel)]="nuevoMensaje"
+        (keydown)="onKeydown($event)"
+        maxlength="200"
+      />
+      <button class="btn-send" (click)="enviarMensaje()">🚀</button>
+    </div>
+  </div>
+
+</div>

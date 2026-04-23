@@ -1,96 +1,78 @@
-<div class="login-screen">
-  <!-- Animated background -->
-  <div class="bg-grid"></div>
-  <div class="bg-radar"></div>
-  <canvas class="bg-particles" id="login-particles"></canvas>
+<div class="login-container">
+  <div class="background-overlay"></div>
 
   <div class="login-card">
-    <!-- Corner decorators -->
-    <span class="corner top-left"></span>
-    <span class="corner top-right"></span>
-    <span class="corner bot-left"></span>
-    <span class="corner bot-right"></span>
-
-    <div class="login-header">
-      <div class="logo-badge">W.A.R</div>
-      <h1 class="war-title glitch" data-text="W.A.R. NET">W.A.R. NET</h1>
-      <p class="war-sub">SISTEMA DE MANDO GLOBAL · AUTENTICACIÓN REQUERIDA</p>
-      <div class="header-line"></div>
+    <div class="card-header">
+      <div class="game-logo">
+        <span class="logo-text">Pulso <span>Global</span></span>
+      </div>
+      <h2>{{ isRegisterMode() ? 'CREAR CUENTA' : 'INICIAR SESIÓN' }}</h2>
+      <p>{{ isRegisterMode() ? 'Únete a la legión de combate' : 'Accede a tu cuenta de combate' }}</p>
     </div>
 
-    <div class="login-form">
-      <div class="field-wrap">
-        <span class="field-icon">⬡</span>
-        <input
-          id="login-username"
-          type="text"
-          autocomplete="off"
-          [value]="authUsername()"
-          (input)="updateAuthUser($event)"
-          (keydown.enter)="doLogin()"
-          placeholder=" "
-        />
-        <label for="login-username">Usuario</label>
-        <div class="field-line"></div>
-      </div>
-
-      <div class="field-wrap">
-        <span class="field-icon">⬡</span>
-        <input
-          id="login-password"
-          [type]="isPasswordVisible() ? 'text' : 'password'"
-          autocomplete="current-password"
-          [value]="authPassword()"
-          (input)="updateAuthPass($event)"
-          (keydown.enter)="doLogin()"
-          placeholder=" "
-        />
-        <label for="login-password">Contraseña</label>
-        <button class="btn-show-pass"
-          type="button"
-          (mousedown)="isPasswordVisible.set(true)"
-          (mouseup)="isPasswordVisible.set(false)"
-          (mouseleave)="isPasswordVisible.set(false)"
-          (touchstart)="isPasswordVisible.set(true)"
-          (touchend)="isPasswordVisible.set(false)"
-          title="Mantener para ver"
-        >
-          {{ isPasswordVisible() ? '👁️' : '👁️‍🗨️' }}
-        </button>
-        <div class="field-line"></div>
-      </div>
-
-      @if (authError()) {
-        <div class="login-error">
-          <span class="err-icon">▲</span> {{ authError() }}
+    <form (submit)="onSubmit(); $event.preventDefault()" class="login-form">
+      <div class="input-group">
+        <label for="username">USUARIO</label>
+        <div class="input-wrapper">
+          <input type="text" id="username" name="username" [(ngModel)]="username" placeholder="Introduce tu nombre"
+            [disabled]="isLoading()" autocomplete="off">
+          <span class="input-line"></span>
         </div>
+      </div>
+
+      @if (isRegisterMode()) {
+      <div class="input-group">
+        <label for="email">EMAIL</label>
+        <div class="input-wrapper">
+          <input type="email" id="email" name="email" [(ngModel)]="email" placeholder="tu@email.com"
+            [disabled]="isLoading()" autocomplete="off">
+          <span class="input-line"></span>
+        </div>
+      </div>
       }
 
-      <div class="login-actions">
-        <button
-          id="btn-login"
-          class="btn-login"
-          (click)="doLogin()"
-          [disabled]="!authUsername() || !authPassword() || isLoading()"
-        >
-          @if (isLoading()) {
-            <span class="spinner"></span> AUTENTICANDO...
-          } @else {
-            <span class="btn-scan"></span> INICIAR SESIÓN
-          }
-        </button>
+      <div class="input-group">
+        <label for="password">CONTRASEÑA</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" name="password" [(ngModel)]="password" placeholder="••••••••"
+            [disabled]="isLoading()">
+          <span class="input-line"></span>
+        </div>
+      </div>
 
-        <button
-          id="btn-register"
-          class="btn-register"
-          (click)="doRegister()"
-          [disabled]="!authUsername() || !authPassword() || isLoading()"
-        >
-          REGISTRARSE
+      @if (error()) {
+      <div class="error-message" [class.success]="error().includes('exitoso')">
+        <span class="icon">{{ error().includes('exitoso') ? '✅' : '⚠️' }}</span> {{ error() }}
+      </div>
+      }
+
+      <button type="submit" class="login-button" [disabled]="isLoading()">
+        @if (isLoading()) {
+        <span class="loader"></span>
+        <span>{{ isRegisterMode() ? 'REGISTRANDO...' : 'AUTENTICANDO...' }}</span>
+        } @else {
+        <span>{{ isRegisterMode() ? 'CREAR MI CUENTA' : 'INGRESAR AL SISTEMA' }}</span>
+        }
+      </button>
+
+      <div class="form-footer">
+        @if (!isRegisterMode()) {
+        <a href="#">¿Olvidaste tu contraseña?</a>
+        }
+        <div class="divider"></div>
+        <button type="button" class="register-link" (click)="toggleMode()">
+          {{ isRegisterMode() ? '¿YA TIENES CUENTA? INICIA SESIÓN' : 'CREAR NUEVA CUENTA' }}
         </button>
       </div>
-    </div>
+    </form>
+  </div>
 
-    <p class="login-footer">W.A.R. NET v2.0 · ACCESO CIFRADO · AUTORIZADO</p>
+  <div class="system-status">
+    <div class="status-item">
+      <span class="status-dot online"></span> SERVIDOR: ONLINE
+    </div>
+    <div class="status-item">
+      v1.0.4-STABLE
+    </div>
   </div>
 </div>
