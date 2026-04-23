@@ -1,0 +1,107 @@
+<!-- Vista por defecto: botones de acción principales -->
+<ng-container *ngIf="vistaActual === 'default'">
+  <div class="command-header">
+    <span class="subtitle">COMANDO DE SALA</span>
+  </div>
+
+  <div class="command-actions">
+    <!-- Botón: Crear una sala nueva -->
+    <button class="btn-create" (click)="mostrarVista('crear')">
+      <div class="btn-content">
+        <span class="btn-title">CREAR SALA</span>
+        <span class="btn-subtitle">PÚBLICAS O PRIVADAS</span>
+      </div>
+      <span class="icon">🔑</span>
+    </button>
+
+    <!-- Botón: Unirse mediante código -->
+    <button class="btn-join" (click)="mostrarVista('unirse')">
+      <div class="btn-content">
+        <span class="btn-title">UNIRSE A UNA SALA</span>
+        <span class="btn-subtitle">BUSCA TU BATALLA</span>
+      </div>
+      <span class="icon">🔍</span>
+    </button>
+  </div>
+</ng-container>
+
+<!-- Vista: Formulario para crear una sala -->
+<ng-container *ngIf="vistaActual === 'crear'">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="cyber-title">CREAR NUEVA SALA</h3>
+      <button class="btn-back" (click)="mostrarVista('default')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">NOMBRE DE LA SALA</label>
+      <input
+        class="cyber-input"
+        type="text"
+        placeholder="Ej: OP_RELÁMPAGO"
+        [(ngModel)]="nombreSala"
+        maxlength="20"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">TIPO DE SALA</label>
+      <div class="tipo-selector">
+        <!-- Opción: Sala pública (aparece en la lista para todos) -->
+        <button
+          class="tipo-btn"
+          [class.activo]="tipoSala === 'publica'"
+          (click)="tipoSala = 'publica'"
+        >
+          🌐 PÚBLICA
+        </button>
+        <!-- Opción: Sala privada (solo accesible mediante código) -->
+        <button
+          class="tipo-btn"
+          [class.activo]="tipoSala === 'privada'"
+          (click)="tipoSala = 'privada'"
+        >
+          🔒 PRIVADA
+        </button>
+      </div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <p class="error-msg" *ngIf="errorSala">{{ errorSala }}</p>
+
+    <!-- Botón de crear -->
+    <button class="btn-create" (click)="crearSala()" [disabled]="cargando">
+      {{ cargando ? 'CREANDO...' : 'CREAR SALA' }}
+    </button>
+  </div>
+</ng-container>
+
+<!-- Vista: Formulario para unirse mediante código -->
+<ng-container *ngIf="vistaActual === 'unirse'">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="cyber-title">UNIRSE A SALA</h3>
+      <button class="btn-back" (click)="mostrarVista('default')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">CÓDIGO DE SALA</label>
+      <input
+        class="cyber-input"
+        type="text"
+        placeholder="Ej: A3F7C1"
+        [(ngModel)]="codigoInput"
+        maxlength="6"
+        style="text-transform: uppercase; letter-spacing: 4px; text-align: center;"
+      />
+    </div>
+
+    <!-- Mensaje de error -->
+    <p class="error-msg" *ngIf="errorSala">{{ errorSala }}</p>
+
+    <!-- Botón de unirse -->
+    <button class="btn-join" (click)="unirseSala()" [disabled]="cargando">
+      {{ cargando ? 'CONECTANDO...' : 'UNIRSE' }}
+    </button>
+  </div>
+</ng-container>

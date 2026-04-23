@@ -1,0 +1,39 @@
+<div class="chat-header">
+  <span class="cyber-title">SYSTEM COMS</span>
+  <span class="subtitle">(CHAT GLOBAL)</span>
+</div>
+
+<!-- Área de mensajes del chat global -->
+<div class="chat-messages">
+  <!-- Mensaje de placeholder cuando no hay mensajes aún -->
+  <div class="msg system" *ngIf="mensajes.length === 0">
+    <span class="sender">SISTEMA:</span>
+    <span class="content">Conectando al chat global...</span>
+  </div>
+
+  <!-- Lista dinámica de mensajes recibidos del servidor -->
+  <div
+    class="msg"
+    *ngFor="let msg of mensajes"
+    [class.system]="msg.tipo === 'sistema'"
+    [class.user]="msg.tipo === 'usuario'"
+  >
+    <span class="sender">{{ msg.remitente }}:</span>
+    <span class="content">{{ msg.contenido }}</span>
+  </div>
+</div>
+
+<!-- Input para enviar mensajes al chat global -->
+<div class="chat-input-area">
+  <input
+    type="text"
+    placeholder="ENVIAR MENSAJE GLOBAL..."
+    class="chat-input"
+    [(ngModel)]="nuevoMensaje"
+    (keydown)="onKeydown($event)"
+    maxlength="200"
+  />
+  <button class="btn-send" (click)="enviarMensaje()">
+    <span class="icon">🚀</span>
+  </button>
+</div>

@@ -1,0 +1,36 @@
+=========================================================
+  GUÍA PARA ARRANCAR EL PROYECTO - PULSO GLOBAL
+=========================================================
+
+El proyecto tiene 3 partes que hay que arrancar por separado,
+en este orden:
+
+---------------------------------------------------------
+1. BACKEND (Spring Boot) - API REST de usuarios
+---------------------------------------------------------
+Terminal 1:
+  cd backend
+  .\mvnw.cmd spring-boot:run
+
+
+---------------------------------------------------------
+2. SERVIDOR SOCKET.IO (Node.js) - Tiempo real
+---------------------------------------------------------
+2 terminal --- cd socket-server && npm start
+
+
+---------------------------------------------------------
+3. FRONTEND (Angular) - Interfaz de usuario
+---------------------------------------------------------
+Terminal 3:
+  npm start
+
+
+
+=========================================================
+  RESUMEN: 3 terminales, 3 servidores
+=========================================================
+  - npm start              → Puerto 4200 (Angular)
+  - node socket-server/server.js → Puerto 3000 (Socket.io)
+  - mvnw spring-boot:run   → Puerto 8080 (Spring Boot)
+=========================================================

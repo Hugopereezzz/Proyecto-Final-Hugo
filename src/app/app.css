@@ -87,3 +87,13 @@ main {
   font-size: 20px;
   font-weight: 300;
 }
+
+/* Responsividad para Móviles */
+@media (max-width: 768px) {
+  .main-content {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}

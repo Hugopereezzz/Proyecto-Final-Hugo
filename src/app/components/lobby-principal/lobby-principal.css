@@ -1,23 +1,79 @@
-/* Estilos mínimos para el modo debug del Lobby */
 :host {
   display: block;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  background-color: var(--bg-dark);
+  padding: 10px;
+  box-sizing: border-box;
 }
 
-.lobby-debug {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+.lobby-container {
+  display: grid;
+  width: 100%;
   height: 100%;
-  color: #fff;
-  font-family: sans-serif;
-  background-color: #1a1a1a; /* Fondo oscuro simple */
+  gap: 15px;
+  grid-template-columns: 250px 1fr 300px;
+  grid-template-rows: 60px auto 1fr;
+  grid-template-areas:
+    "nav nav nav"
+    "ranking actions chat"
+    "ranking lobbies chat";
 }
 
-h1 {
-  font-size: 3rem;
-  color: #00d4ff;
-  margin-bottom: 10px;
+.area-nav {
+  grid-area: nav;
+}
+
+.area-ranking {
+  grid-area: ranking;
+}
+
+.area-actions {
+  grid-area: actions;
+}
+
+.area-lobbies {
+  grid-area: lobbies;
+}
+
+.area-chat {
+  grid-area: chat;
+}
+
+/* Responsividad para Tablets */
+@media (max-width: 1024px) {
+  .lobby-container {
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: 60px auto 1fr 300px;
+    grid-template-areas:
+      "nav nav"
+      "ranking actions"
+      "ranking lobbies"
+      "chat chat";
+  }
+}
+
+/* Responsividad para Móviles */
+@media (max-width: 768px) {
+  :host {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .lobby-container {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .area-nav {
+    min-height: 60px;
+  }
+  
+  .area-actions, .area-lobbies, .area-ranking, .area-chat {
+    min-height: 300px;
+    width: 100%;
+  }
 }

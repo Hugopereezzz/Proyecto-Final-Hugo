@@ -1,0 +1,271 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== CABECERA ========== */
+.command-header {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.command-header::before, .command-header::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 100px;
+  height: 2px;
+  background-color: var(--neon-red-dim);
+}
+.command-header::before { right: 100%; margin-right: 10px; }
+.command-header::after  { left: 100%;  margin-left: 10px; }
+
+.subtitle {
+  font-family: var(--font-header);
+  font-size: 13px;
+  color: var(--text-main);
+  letter-spacing: 2px;
+}
+
+/* ========== BOTONES DEFAULT ========== */
+.command-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 420px;
+}
+
+button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--panel-bg-solid);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.3s ease;
+  font-family: var(--font-body);
+  width: 100%;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.btn-title {
+  font-family: var(--font-header);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.btn-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.icon { font-size: 24px; }
+
+.btn-create {
+  border-color: var(--neon-green);
+  box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.15);
+}
+.btn-create:hover:not(:disabled) {
+  background: rgba(57, 255, 20, 0.1);
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+}
+
+.btn-join {
+  border-color: #3b82f6;
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.15);
+}
+.btn-join:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+}
+
+/* ========== MODAL CARD ========== */
+.modal-card {
+  background: var(--panel-bg-solid);
+  border: 1px solid var(--neon-cyan-dim);
+  border-radius: 10px;
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-shadow: 0 0 20px var(--neon-cyan-dim);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cyber-title {
+  font-family: var(--font-header);
+  font-size: 16px;
+  color: var(--neon-cyan);
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: auto;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.btn-back:hover { color: var(--neon-red); }
+
+/* ========== FORMULARIO ========== */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-family: var(--font-header);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.cyber-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--neon-cyan-dim);
+  border-radius: 6px;
+  color: var(--neon-cyan);
+  font-family: var(--font-header);
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cyber-input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan-dim);
+}
+
+.cyber-input::placeholder { color: var(--text-muted); }
+
+/* ========== SELECTOR TIPO SALA ========== */
+.tipo-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.tipo-btn {
+  flex: 1;
+  justify-content: center;
+  padding: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-family: var(--font-header);
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.tipo-btn:hover:not(.activo) {
+  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.05);
+}
+
+.tipo-btn.activo {
+  border-color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan-dim);
+}
+
+/* ========== CÓDIGO DE SALA ========== */
+.codigo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--neon-green);
+  border-radius: 8px;
+  padding: 12px 15px;
+  justify-content: space-between;
+}
+
+.codigo-texto {
+  font-family: var(--font-header);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--neon-green);
+  letter-spacing: 6px;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+}
+
+.btn-copiar {
+  background: rgba(57, 255, 20, 0.15);
+  border: 1px solid var(--neon-green);
+  color: var(--neon-green);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-header);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  justify-content: center;
+  width: auto;
+}
+
+.btn-copiar:hover {
+  background: rgba(57, 255, 20, 0.3);
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.btn-copiar.copiado {
+  background: rgba(57, 255, 20, 0.3);
+  color: #fff;
+}
+
+.codigo-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* ========== ERROR ========== */
+.error-msg {
+  color: var(--neon-red);
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+  animation: fadeIn 0.2s ease;
+}
