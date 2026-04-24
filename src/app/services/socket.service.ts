@@ -103,8 +103,8 @@ export class SocketService {
    * Devuelve el código único generado y el estado inicial de la sala.
    */
   onSalaCreada(): Observable<{ ok: boolean; codigo: string; sala: Sala }> {
-    return new Observable(observer => {
-      this.socket.on('sala-creada', (data) => observer.next(data));
+    return new Observable<{ ok: boolean; codigo: string; sala: Sala }>(observer => {
+      this.socket.on('sala-creada', (data: { ok: boolean; codigo: string; sala: Sala }) => observer.next(data));
     });
   }
 
@@ -120,8 +120,8 @@ export class SocketService {
    * Observable que se emite cuando el servidor confirma que el jugador se unió a la sala.
    */
   onSalaUnido(): Observable<{ ok: boolean; codigo: string; sala: Sala }> {
-    return new Observable(observer => {
-      this.socket.on('sala-unido', (data) => observer.next(data));
+    return new Observable<{ ok: boolean; codigo: string; sala: Sala }>(observer => {
+      this.socket.on('sala-unido', (data: { ok: boolean; codigo: string; sala: Sala }) => observer.next(data));
     });
   }
 
@@ -129,8 +129,8 @@ export class SocketService {
    * Observable que se emite cuando el estado de la sala cambia (jugador nuevo, jugador listo, etc.).
    */
   onSalaActualizada(): Observable<Sala> {
-    return new Observable(observer => {
-      this.socket.on('sala-actualizada', (sala) => observer.next(sala));
+    return new Observable<Sala>(observer => {
+      this.socket.on('sala-actualizada', (sala: Sala) => observer.next(sala));
     });
   }
 
@@ -138,8 +138,8 @@ export class SocketService {
    * Observable para errores relacionados con la sala (código incorrecto, sala llena, etc.).
    */
   onErrorSala(): Observable<{ mensaje: string }> {
-    return new Observable(observer => {
-      this.socket.on('error-sala', (error) => observer.next(error));
+    return new Observable<{ mensaje: string }>(observer => {
+      this.socket.on('error-sala', (error: { mensaje: string }) => observer.next(error));
     });
   }
 
@@ -172,8 +172,8 @@ export class SocketService {
    * Observable que se emite cuando la lista de salas públicas se actualiza.
    */
   onSalasActualizadas(): Observable<SalaPublica[]> {
-    return new Observable(observer => {
-      this.socket.on('salas-actualizadas', (salas) => observer.next(salas));
+    return new Observable<SalaPublica[]>(observer => {
+      this.socket.on('salas-actualizadas', (salas: SalaPublica[]) => observer.next(salas));
     });
   }
 
@@ -193,8 +193,8 @@ export class SocketService {
    * Observable que emite mensajes del chat global a medida que llegan.
    */
   onMensajeGlobal(): Observable<MensajeChat> {
-    return new Observable(observer => {
-      this.socket.on('mensaje-global', (msg) => observer.next(msg));
+    return new Observable<MensajeChat>(observer => {
+      this.socket.on('mensaje-global', (msg: MensajeChat) => observer.next(msg));
     });
   }
 
@@ -214,8 +214,8 @@ export class SocketService {
    * Observable que emite mensajes del chat de la sala.
    */
   onMensajeSala(): Observable<MensajeChat> {
-    return new Observable(observer => {
-      this.socket.on('mensaje-sala', (msg) => observer.next(msg));
+    return new Observable<MensajeChat>(observer => {
+      this.socket.on('mensaje-sala', (msg: MensajeChat) => observer.next(msg));
     });
   }
 }
